@@ -39,11 +39,6 @@
 .me-move__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .me-move__head h2 { margin: 0; }
 .me-move__toggle { min-height: 38px; padding: 0 14px; font-size: 15px; }
-.me-move__list { margin: 0; padding: 0; list-style: none; border: 2px solid var(--rl-line-soft); }
-.me-move__list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; border-top: 1px solid var(--rl-line-soft); font-size: 16px; }
-.me-move__list li:first-child { border-top: 0; }
-.me-move__near { margin-left: 8px; padding: 1px 6px; font-family: var(--font-label); font-size: 12px; font-weight: 600; color: var(--rl-ok-ink); background: var(--rl-ok-tint); }
-.me-move__btn { min-height: 36px; padding: 0 12px; font-size: 15px; white-space: nowrap; }
 
 .me-fix { display: flex; flex-direction: column; gap: 10px; padding: 16px 20px; border-top: 1px solid var(--rl-line-soft); }
 .me-fix h2 { margin: 0; }

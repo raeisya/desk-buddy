@@ -60,15 +60,11 @@
 .hod-callout__big strong { font-size: 28px; }
 
 /* Give a permanent desk */
-.hod-assign ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
-.hod-assign li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 260px) auto; align-items: center; gap: 10px 14px; padding: 10px 0; border-bottom: 1px solid var(--rl-line-soft); }
-.hod-assign li:first-child { padding-top: 0; }
-.hod-assign__name { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 17px; font-weight: 600; }
-.hod-assign select { min-height: 42px; padding: 0 10px; font: inherit; font-size: 16px; color: var(--rl-ink); background-color: var(--rl-card); border: 2px solid var(--rl-line-soft); border-radius: 0; }
-.hod-assign select:focus { border-color: var(--rl-red); outline: none; }
-.hod-assign__btn { min-height: 42px; padding: 0 18px; font-size: 16px; }
-.hod-assign__ok { margin: 12px 0 0; color: var(--rl-ok-ink); font-weight: 600; }
-.hod-assign .error { margin: 12px 0 0; }
+.hod-assign { display: flex; flex-direction: column; gap: 10px; }
+.hod-assign__how { margin: 0; }
+.hod-assign__who { margin: 4px 0 0; font-size: 15px; }
+.hod-assign__ok { margin: 0; color: var(--rl-ok-ink); font-weight: 600; }
+.hod-assign .error { margin: 0; }
 
 /* Heatmap */
 .hod-heat { border-collapse: separate; border-spacing: 4px; font-variant-numeric: tabular-nums; }
@@ -102,8 +98,6 @@
   .hod-grid { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 760px) {
-  .hod-assign li { grid-template-columns: minmax(0, 1fr) auto; }
-  .hod-assign__name { grid-column: 1 / -1; }
   .hod-tile__value { font-size: 28px; }
   .hod-table { font-size: 15px; }
   .hod-table th,
