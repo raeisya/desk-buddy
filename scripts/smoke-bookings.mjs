@@ -114,15 +114,23 @@ try {
   }
 
   // 11. saying you're out (WFH/MC/LEAVE/OUTSTATION — Me page or Slack) releases the desk you booked today
+  const before = (await call('GET', `/presence/${u1}`)).data?.status ?? null
   for (const status of ['WFH', 'MC', 'LEAVE', 'OUTSTATION']) {
+    await call('POST', '/presence', { userId: u1, status: 'IN_OFFICE' }) // "in", so the desk can be taken
     r = await as(u1).take(d1)
-    if (r.status === 201) made.push([u1, d1])
+    if (r.status !== 201) {
+      check(`posting ${status} releases your booking (couldn't book ${d1} first)`, false, show(r))
+      continue
+    }
+    made.push([u1, d1])
     await call('POST', '/presence', { userId: u1, status })
     const stillThere = (await floor()).some((d) => d.occupant?.id === u1)
     check(`posting ${status} releases your booking`, !stillThere)
-    if (!stillThere) made.splice(made.findIndex(([u, d]) => u === u1 && d === d1), 1)
+    const i = made.findIndex(([u, d]) => u === u1 && d === d1)
+    if (!stillThere && i >= 0) made.splice(i, 1)
   }
-  await call('POST', '/presence', { userId: u1, status: 'IN_OFFICE' }) // leave the test user "in"
+  // Put the test user's status back (a row that didn't exist can't be deleted: "in" is the closest).
+  await call('POST', '/presence', { userId: u1, status: before ?? 'IN_OFFICE' })
 
   // 10. one person taps two different desks at the same instant: exactly one succeeds
   const [x, y] = await Promise.all([as(u2).take(d2), as(u2).take(d3)])
