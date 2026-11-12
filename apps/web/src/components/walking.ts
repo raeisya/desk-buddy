@@ -113,6 +113,33 @@ export function tripTo(
   return { route, from: 0, to: routeLength(route), hold: { ...wait, back: 0 }, speed }
 }
 
+type Wait = { ms: number; face: Direction; bubble?: string }
+
+/** From `p` down to the hub row: straight down, or via the nearest gap between pods if `p` is in the middle corridor. */
+const downToHub = (p: Point): Point[] =>
+  inMiddleCorridor(p.y) ? [{ x: nearestGap(p.x), y: p.y }, { x: nearestGap(p.x), y: HUB_Y }] : [{ x: p.x, y: HUB_Y }]
+
+/**
+ * Someone without a desk strolling the floor: from spot `a` to spot `b`, then wait there (and stay).
+ * Along the middle corridor when both spots are in it, otherwise via the hub row; never through a desk.
+ */
+export function strollBetween(a: Point, b: Point, wait: Wait, speed = WALK_SPEED): Walk {
+  const route =
+    inMiddleCorridor(a.y) && inMiddleCorridor(b.y)
+      ? dedupe([a, { x: b.x, y: a.y }, b])
+      : dedupe([a, ...downToHub(a), ...[...downToHub(b)].reverse(), b])
+  const to = routeLength(route)
+  return { route, from: 0, to, hold: { ...wait, back: to }, speed }
+}
+
+/** Get up, walk along your own aisle to `x`, wait, walk back and sit. Aisles run wall to wall. */
+export function strollAlongAisle(d: FloorDesk, x: number, wait: Wait, speed = WALK_SPEED): Walk {
+  const feet = seatFeet(d)
+  const y = aisleY(d)
+  const route = dedupe([feet, { x: feet.x, y }, { x: Math.min(Math.max(x, GAP_XS[0]), GAP_XS[3]), y }])
+  return { route, from: 0, to: routeLength(route), hold: { ...wait, back: 0 }, speed }
+}
+
 const onHub = (p: Point) => Math.abs(p.y - HUB_Y) < 0.5
 function dedupe(points: Point[]): Point[] {
   return points.filter((p, i) => i === 0 || dist(points[i - 1], p) > 0.5)

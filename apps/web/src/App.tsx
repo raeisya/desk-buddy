@@ -7,6 +7,7 @@ import { isFree, suggestSeat } from './components/seating'
 import { planKopiRun } from './components/kopi'
 import { presenceWalks, walkDuration } from './components/walking'
 import { useFloor } from './hooks/useFloor'
+import { useAmbientWalks } from './hooks/useAmbientWalks'
 import { useWalkers } from './hooks/useWalkers'
 import { FindSeat } from './pages/FindSeat'
 import { Login } from './pages/Login'
@@ -37,6 +38,7 @@ export default function App() {
   )
   const { floor, error, live, reload } = useFloor(onFloorChange)
   const { persona, users, setPersona } = usePersona()
+  useAmbientWalks(floor, users, walkingIds, startWalks) // John drops by, Chi Keen mingles
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null)
   const [tab, setTab] = useState<AppTab>('map')
