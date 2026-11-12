@@ -93,7 +93,12 @@ export function AdminPage({ floor, persona }: Props) {
   /** What the ⋮ menu offers for a row. You can't deactivate yourself (the API refuses too). */
   function actionsFor(u: AdminUser, self: boolean): RowMenuItem[] {
     const items: RowMenuItem[] = []
-    if (u.deskId) items.push({ label: `Remove from ${u.deskId}`, danger: true, onSelect: () => setPending({ kind: 'remove', user: u }) })
+    // Always listed (greyed out without a desk) so it's clear where the action lives.
+    items.push(
+      u.deskId
+        ? { label: `Remove from ${u.deskId}`, danger: true, onSelect: () => setPending({ kind: 'remove', user: u }) }
+        : { label: 'Remove from desk', hint: 'no desk', disabled: true, onSelect: () => {} },
+    )
     if (!self && u.active) items.push({ label: 'Deactivate', danger: true, onSelect: () => setPending({ kind: 'deactivate', user: u }) })
     if (!self && !u.active) items.push({ label: 'Reactivate', onSelect: () => void save(u, { active: true }) })
     return items

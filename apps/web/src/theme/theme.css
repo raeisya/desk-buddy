@@ -525,11 +525,14 @@ select:disabled { cursor: not-allowed; opacity: 0.6; }
 .row-menu__btn:hover,
 .row-menu__btn[aria-expanded='true'] { background: var(--rl-red-tint); border-color: var(--rl-red); }
 .row-menu__btn:disabled { cursor: not-allowed; opacity: 0.5; }
-.row-menu { position: fixed; z-index: 50; min-width: 200px; margin: 0; padding: 4px 0; list-style: none; background: var(--rl-card); border: 2px solid var(--rl-red); box-shadow: 4px 4px 0 var(--rl-ink); }
-.row-menu__item { display: flex; align-items: center; width: 100%; min-height: 44px; padding: 0 16px; font: inherit; font-size: 16px; text-align: left; color: var(--rl-ink); background: transparent; border: 0; border-radius: 0; cursor: pointer; white-space: nowrap; }
+.row-menu { position: fixed; z-index: 50; min-width: 168px; margin: 0; padding: 4px 0; list-style: none; background: var(--rl-card); border: 2px solid var(--rl-red); box-shadow: 4px 4px 0 var(--rl-ink); }
+.row-menu__item { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 36px; padding: 0 12px; font: inherit; font-size: 14px; text-align: left; color: var(--rl-ink); background: transparent; border: 0; border-radius: 0; cursor: pointer; white-space: nowrap; }
 .row-menu__item:hover,
 .row-menu__item:focus-visible { background: var(--rl-red-tint); outline: none; }
 .row-menu__item--danger { color: var(--rl-red-dark); font-weight: 600; }
+.row-menu__item:disabled { color: var(--rl-muted); font-weight: 400; cursor: not-allowed; }
+.row-menu__item:disabled:hover { background: transparent; }
+.row-menu__hint { font-family: var(--font-label); font-size: 12px; color: var(--rl-muted); }
 
 /* ── Building blocks for new screens (login, HOD dashboard) ────────────── */
 .db-panel { background: var(--rl-card); border: 2px solid var(--rl-red); box-shadow: 4px 4px 0 var(--rl-ink); }

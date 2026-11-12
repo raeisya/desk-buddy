@@ -6,6 +6,10 @@ export interface RowMenuItem {
   onSelect: () => void
   /** Red text: takes something away (deactivate, remove from desk). */
   danger?: boolean
+  /** Shown greyed out (and skipped by arrow keys), so people see the action exists but doesn't apply. */
+  disabled?: boolean
+  /** Short muted note after the label, e.g. "no desk". */
+  hint?: string
 }
 
 interface Props {
@@ -15,7 +19,7 @@ interface Props {
   disabled?: boolean
 }
 
-const ITEM_H = 44
+const ITEM_H = 36
 
 /**
  * "More actions" ⋮ menu for a table row (C). The menu is portalled to <body> with fixed position, so a
@@ -44,7 +48,7 @@ export function RowMenu({ label, items, disabled = false }: Props) {
 
   useEffect(() => {
     if (!open) return
-    menu.current?.querySelector<HTMLButtonElement>('button')?.focus()
+    menu.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus()
     const onDown = (e: MouseEvent) => {
       const t = e.target as Node
       if (!menu.current?.contains(t) && !button.current?.contains(t)) setPos(null)
@@ -61,7 +65,7 @@ export function RowMenu({ label, items, disabled = false }: Props) {
   }, [open])
 
   function onKey(e: KeyboardEvent<HTMLUListElement>) {
-    const buttons = [...(menu.current?.querySelectorAll<HTMLButtonElement>('button') ?? [])]
+    const buttons = [...(menu.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)') ?? [])]
     const at = buttons.indexOf(document.activeElement as HTMLButtonElement)
     if (e.key === 'Escape') {
       e.preventDefault()
@@ -75,7 +79,8 @@ export function RowMenu({ label, items, disabled = false }: Props) {
     }
   }
 
-  if (items.length === 0) return null
+  // Nothing you can actually do (e.g. your own row, no desk): no ⋮ at all.
+  if (items.every((i) => i.disabled)) return null
 
   return (
     <>
@@ -105,12 +110,14 @@ export function RowMenu({ label, items, disabled = false }: Props) {
                   type="button"
                   role="menuitem"
                   className={item.danger ? 'row-menu__item row-menu__item--danger' : 'row-menu__item'}
+                  disabled={item.disabled}
                   onClick={() => {
                     close(true)
                     item.onSelect()
                   }}
                 >
                   {item.label}
+                  {item.hint && <span className="row-menu__hint">{item.hint}</span>}
                 </button>
               </li>
             ))}
