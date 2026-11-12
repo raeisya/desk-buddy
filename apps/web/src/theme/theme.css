@@ -506,11 +506,18 @@ select:disabled { cursor: not-allowed; opacity: 0.6; }
 .modal__close:hover { border-color: var(--rl-on-red); }
 .modal__body { display: flex; flex-direction: column; gap: 12px; padding: 16px 20px 20px; overflow-y: auto; }
 .modal__hint { margin: 0; }
+.modal--small { width: min(460px, calc(100vw - 32px)); }
 @media (max-width: 760px) {
   .modal { width: 100vw; height: 100dvh; max-height: none; margin: 0; border: 0; box-shadow: none; }
   .modal__title { font-size: 19px; }
   .modal__body { padding: 14px 14px calc(20px + env(safe-area-inset-bottom, 0px)); }
+  /* A confirm stays a centred card, not a full-screen page. */
+  .modal.modal--small { width: calc(100vw - 32px); height: auto; max-height: calc(100dvh - 32px); margin: auto; border: 2px solid var(--rl-red); box-shadow: 6px 6px 0 var(--rl-ink); }
 }
+.confirm__text { margin: 0; font-size: 16px; line-height: 1.45; }
+.confirm__actions { display: flex; gap: 8px; }
+.confirm__actions .db-btn { min-height: 46px; padding: 0 16px; font-size: 16px; }
+.confirm__actions .db-btn:first-child { flex: 1; }
 
 /* ── Building blocks for new screens (login, HOD dashboard) ────────────── */
 .db-panel { background: var(--rl-card); border: 2px solid var(--rl-red); box-shadow: 4px 4px 0 var(--rl-ink); }

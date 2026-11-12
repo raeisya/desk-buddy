@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { api } from '../api/client'
 import { ROLES, type AdminUser, type AdminUserPatch, type FloorResponse, type Role, type UserSummary } from '../api/contracts'
 import { PageHeader } from '../theme/Chrome'
+import { ConfirmDialog } from '../theme/ConfirmDialog'
 import './admin.css'
 import { personFrameStyle } from '../components/characterArt'
 
@@ -28,6 +29,8 @@ export function AdminPage({ floor, persona }: Props) {
   const [team, setTeam] = useState('all')
   const [show, setShow] = useState<Show>('all')
   const [page, setPage] = useState(0)
+  // The change waiting on "Are you sure?" (in-app pop-up, not the browser's confirm).
+  const [pending, setPending] = useState<{ kind: 'deactivate' | 'remove'; user: AdminUser } | null>(null)
 
   // Refetch on live floor changes too: an HOD assigning a desk shows up here without a reload.
   useEffect(() => {
@@ -62,38 +65,34 @@ export function AdminPage({ floor, persona }: Props) {
   const active = users.filter((u) => u.active).length
   const withDesk = users.filter((u) => u.deskId).length
 
-  async function save(user: AdminUser, patch: AdminUserPatch) {
-    if (patch.active === false) {
-      const desk = user.deskId ? ` Their desk ${user.deskId} goes back to the pool.` : ''
-      if (!window.confirm(`Deactivate ${user.name}? They disappear from sign-in and the team counts.${desk}`)) return
-    }
+  /** Runs one change for `user` (row shows busy), then puts the server's answer in the table. */
+  async function run(user: AdminUser, action: () => Promise<AdminUser>) {
     setBusyId(user.id)
     setError(null)
     try {
-      const updated = await api.updateUser(persona.id, user.id, patch)
+      const updated = await action()
       setUsers((prev) => prev?.map((u) => (u.id === updated.id ? updated : u)) ?? prev)
     } catch (e) {
       setError((e as Error).message)
     } finally {
       setBusyId(null)
+      setPending(null)
     }
   }
 
+  const save = (user: AdminUser, patch: AdminUserPatch) => run(user, () => api.updateUser(persona.id, user.id, patch))
+
   /** Take back someone's permanent desk: it goes back to the pool (no owner). */
-  async function removeDesk(user: AdminUser) {
-    const deskId = user.deskId
-    if (!deskId) return
-    if (!window.confirm(`Remove ${user.name} from ${deskId}? The desk goes back to the pool and anyone can claim it.`)) return
-    setBusyId(user.id)
-    setError(null)
-    try {
+  const removeDesk = (user: AdminUser, deskId: string) =>
+    run(user, async () => {
       await api.setDeskOwner(persona.id, deskId, null)
-      setUsers((prev) => prev?.map((u) => (u.id === user.id ? { ...u, deskId: null } : u)) ?? prev)
-    } catch (e) {
-      setError((e as Error).message)
-    } finally {
-      setBusyId(null)
-    }
+      return { ...user, deskId: null }
+    })
+
+  function confirmPending() {
+    if (!pending) return
+    if (pending.kind === 'deactivate') void save(pending.user, { active: false })
+    else if (pending.user.deskId) void removeDesk(pending.user, pending.user.deskId)
   }
 
   return (
@@ -195,7 +194,7 @@ export function AdminPage({ floor, persona }: Props) {
                             className="db-btn db-btn--plain admin-btn admin-desk__remove"
                             aria-label={`Remove ${u.name} from ${u.deskId}`}
                             disabled={busy}
-                            onClick={() => removeDesk(u)}
+                            onClick={() => setPending({ kind: 'remove', user: u })}
                           >
                             Remove
                           </button>
@@ -213,7 +212,7 @@ export function AdminPage({ floor, persona }: Props) {
                           type="button"
                           className={`db-btn ${u.active ? 'db-btn--plain' : 'db-btn--secondary'} admin-btn`}
                           disabled={busy}
-                          onClick={() => save(u, { active: !u.active })}
+                          onClick={() => (u.active ? setPending({ kind: 'deactivate', user: u }) : save(u, { active: true }))}
                         >
                           {busy ? 'Saving…' : u.active ? 'Deactivate' : 'Reactivate'}
                         </button>
@@ -235,8 +234,8 @@ export function AdminPage({ floor, persona }: Props) {
         <div className="admin-foot">
           <p className="muted">
             Showing {first}–{last} of {rows.length}
-            {rows.length !== users.length && ` (${users.length} in total)`}. Remove takes a permanent desk back; give one on the Team
-            page.
+            {rows.length !== users.length && ` (${users.length} in total)`}. Remove takes a permanent desk back; give one with Manage
+            desks on the Team page.
           </p>
           {pageCount > 1 && (
             <nav className="admin-pager" aria-label="Staff pages">
@@ -258,6 +257,29 @@ export function AdminPage({ floor, persona }: Props) {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={pending !== null}
+        title={pending?.kind === 'deactivate' ? 'Deactivate?' : 'Remove from desk?'}
+        confirmLabel={pending?.kind === 'deactivate' ? `Deactivate ${pending.user.name}` : `Remove from ${pending?.user.deskId ?? 'desk'}`}
+        busy={pending !== null && busyId === pending.user.id}
+        onConfirm={confirmPending}
+        onCancel={() => setPending(null)}
+      >
+        {pending?.kind === 'deactivate' ? (
+          <>
+            <strong>{pending.user.name}</strong> disappears from sign-in and the team counts.
+            {pending.user.deskId && ` Their desk ${pending.user.deskId} goes back to the pool.`}
+          </>
+        ) : (
+          pending && (
+            <>
+              <strong>{pending.user.name}</strong> loses permanent desk <strong>{pending.user.deskId}</strong>. It goes back to the pool and
+              anyone can claim it.
+            </>
+          )
+        )}
+      </ConfirmDialog>
     </section>
   )
 }

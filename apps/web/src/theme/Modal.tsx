@@ -5,13 +5,15 @@ interface Props {
   onClose: () => void
   title: string
   children: ReactNode
+  /** 'small' for a confirm (stays a centred card on a phone); default is wide, for the floor map. */
+  size?: 'wide' | 'small'
 }
 
 /**
  * Pop-up (C), built on the native <dialog>: Esc closes it, focus stays inside, the page behind is inert
  * and screen readers announce it. Centred on desktop; full screen on a phone (theme.css).
  */
-export function Modal({ open, onClose, title, children }: Props) {
+export function Modal({ open, onClose, title, children, size = 'wide' }: Props) {
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
 
@@ -25,7 +27,7 @@ export function Modal({ open, onClose, title, children }: Props) {
   return (
     <dialog
       ref={ref}
-      className="modal"
+      className={size === 'small' ? 'modal modal--small' : 'modal'}
       aria-labelledby={titleId}
       onCancel={(e) => {
         e.preventDefault() // Esc: let React state close it so open/closed never drift apart
