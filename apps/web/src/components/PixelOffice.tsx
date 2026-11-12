@@ -1,28 +1,21 @@
-import type { FloorDesk, PersonRef } from '../api/contracts'
+import type { FloorDesk } from '../api/contracts'
 import { CHARACTER_SHEET, frameStyle, seatPosition, variantFor } from '../theme/characters'
 import { DESK_STATE_STYLE } from './deskStyles'
 import { shortName } from './displayName'
 import { OFFICE_MAP } from './officeMap'
+import { ownerAway, seatedPerson } from './seating'
 
 const { width: MAP_W, height: MAP_H, src } = OFFICE_MAP
 const pct = (value: number, total: number) => `${(value / total) * 100}%`
 const SIT_FRAME = CHARACTER_SHEET.frames.sit[0]
 const NAME_DROP = 10 // map px: the sit frame has empty space above the head
 
-/** Who is physically at the desk: today's booking, else the owner if they're in. */
-function seatedPerson(d: FloorDesk): PersonRef | null {
-  return d.occupant ?? (d.state === 'occupied' ? d.owner : null)
-}
-
-/** Owner is out and nobody has taken the desk. Shows "Away" only — never the reason. */
-function ownerAway(d: FloorDesk): boolean {
-  return d.state === 'available' && d.owner !== null && d.occupant === null
-}
-
 interface Props {
   desks: FloorDesk[]
   selectedId?: string | null
   youId?: string | null
+  /** Desk picked by "Find me a seat": highlighted, with a "Sit here" bubble instead of "Away". */
+  suggestedId?: string | null
   onSelect?: (desk: FloorDesk) => void
 }
 
@@ -31,7 +24,7 @@ interface Props {
  * sprites and "Away" bubbles. Everything is placed in map pixels (1280×768) as percentages, so the
  * whole office scales together.
  */
-export function PixelOffice({ desks, selectedId, youId, onSelect }: Props) {
+export function PixelOffice({ desks, selectedId, youId, suggestedId, onSelect }: Props) {
   if (desks.length === 0) return <p className="muted">No desks yet — check the seed data.</p>
 
   // Paint top-to-bottom so lower desks' people overlap the row above, not the other way round.
@@ -49,12 +42,13 @@ export function PixelOffice({ desks, selectedId, youId, onSelect }: Props) {
         const label = DESK_STATE_STYLE[d.state].label
         const isYou = !!youId && (d.owner?.id === youId || d.occupant?.id === youId)
         const youSeatedHere = !!person && person.id === youId
+        const suggested = d.id === suggestedId && !person
         const seat = seatPosition(d)
         return (
           <div key={d.id} className="px-desk-slot">
             <button
               type="button"
-              className={`px-desk state-${d.state}${d.id === selectedId ? ' selected' : ''}${isYou ? ' is-you' : ''}${isYou && !person ? ' is-you-empty' : ''}`}
+              className={`px-desk state-${d.state}${d.id === selectedId ? ' selected' : ''}${isYou ? ' is-you' : ''}${isYou && !person ? ' is-you-empty' : ''}${suggested ? ' suggested' : ''}`}
               style={{ left: pct(d.x, MAP_W), top: pct(d.y, MAP_H), width: pct(d.w, MAP_W), height: pct(d.h, MAP_H) }}
               onClick={() => onSelect?.(d)}
               aria-label={`${d.id}, ${label}${person ? `, ${person.name}` : ''}${isYou ? ', your desk' : ''}`}
@@ -87,9 +81,9 @@ export function PixelOffice({ desks, selectedId, youId, onSelect }: Props) {
                 {youSeatedHere ? 'YOU' : shortName(person.name)}
               </span>
             )}
-            {ownerAway(d) && (
+            {(ownerAway(d) || suggested) && (
               <span
-                className={`px-bubble facing-${d.facing}`}
+                className={`px-bubble facing-${d.facing}${suggested ? ' suggested' : ''}`}
                 aria-hidden="true"
                 style={{
                   left: pct(d.x + d.w / 2, MAP_W),
@@ -97,7 +91,7 @@ export function PixelOffice({ desks, selectedId, youId, onSelect }: Props) {
                   top: pct(d.facing === 'down' ? d.y : d.y + d.h, MAP_H),
                 }}
               >
-                Away
+                {suggested ? 'Sit here!' : 'Away'}
               </span>
             )}
           </div>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { DeskPanel } from './components/DeskPanel'
 import { Legend } from './components/Legend'
 import { PixelOffice } from './components/PixelOffice'
+import { isFree, suggestSeat } from './components/seating'
 import { useFloor } from './hooks/useFloor'
 import { FindSeat } from './pages/FindSeat'
 import { Login } from './pages/Login'
@@ -11,14 +12,38 @@ import { AppNav, type AppTab } from './theme/AppNav'
 import { DrawingFooter, MapFrame, PanelHint, TitleBlock } from './theme/Chrome'
 import { useNarrow } from './theme/useNarrow'
 
+interface Suggestion {
+  personaId: string
+  deskId: string | null // null when there's nothing to suggest (already seated, floor full)
+  note: string
+}
+
 export default function App() {
   const { floor, error, live, reload } = useFloor()
   const { persona, users, setPersona } = usePersona()
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [suggestion, setSuggestion] = useState<Suggestion | null>(null)
   const [tab, setTab] = useState<AppTab>('map')
   // Look the desk up in the latest floor so the panel updates live when state changes.
   const selected = floor?.desks.find((d) => d.id === selectedId) ?? null
   const narrow = useNarrow()
+  // A suggestion belongs to the persona who asked (switching persona hides it), and a desk suggestion
+  // only stays up while that desk is still free — once anyone sits there, the note would be stale.
+  const suggestedDesk = suggestion?.deskId ? floor?.desks.find((d) => d.id === suggestion.deskId) : undefined
+  const activeSuggestion =
+    suggestion && suggestion.personaId === persona?.id && (suggestion.deskId === null || (suggestedDesk && isFree(suggestedDesk)))
+      ? suggestion
+      : null
+
+  function findSeat() {
+    if (!floor || !persona) return
+    const result = suggestSeat(floor.desks, persona)
+    const suggestedId = result.ok ? result.desk.id : null
+    // Open the panel on the suggestion, or on the desk you're already at.
+    const focusId = suggestedId ?? (result.ok ? null : (result.deskId ?? null))
+    setSuggestion({ personaId: persona.id, deskId: suggestedId, note: result.note })
+    if (focusId) setSelectedId(focusId)
+  }
 
   // Phone: the desk panel sits below the map, so bring it into view when a desk is picked.
   useEffect(() => {
@@ -50,10 +75,26 @@ export default function App() {
     />
   )
 
+  // B's "Find me a seat near <team>" (#10): marks the desk on the map and opens the panel.
+  const findSeatBar = floor && (
+    <div className="find-seat">
+      <button type="button" className="px-button primary" onClick={findSeat}>
+        Find me a seat near {persona.team}
+      </button>
+      {activeSuggestion && <p aria-live="polite">{activeSuggestion.note}</p>}
+    </div>
+  )
+
   const map = floor && (
     <div className="map-wrap">
       <MapFrame floor={floor} users={users} legend={<Legend />} homeTeam={persona.team} onSelectDesk={(d) => setSelectedId(d.id)}>
-        <PixelOffice desks={floor.desks} selectedId={selectedId} youId={persona.id} onSelect={(d) => setSelectedId(d.id)} />
+        <PixelOffice
+          desks={floor.desks}
+          selectedId={selectedId}
+          youId={persona.id}
+          suggestedId={activeSuggestion?.deskId ?? null}
+          onSelect={(d) => setSelectedId(d.id)}
+        />
       </MapFrame>
     </div>
   )
@@ -63,6 +104,7 @@ export default function App() {
       key={selected.id /* fresh busy/error state per desk */}
       desk={selected}
       persona={persona}
+      note={activeSuggestion?.deskId === selected.id ? activeSuggestion.note : undefined}
       onClose={() => setSelectedId(null)}
       onChanged={() => void reload()}
     />
@@ -97,10 +139,13 @@ export default function App() {
         <main>
           {pages}
           {tab === 'map' && floor && (
-            <div className="workspace">
-              {map}
-              {panel}
-            </div>
+            <>
+              {findSeatBar}
+              <div className="workspace">
+                {map}
+                {panel}
+              </div>
+            </>
           )}
         </main>
         <AppNav tab={tab} onTab={setTab} placement="bottom" />
@@ -118,7 +163,12 @@ export default function App() {
       </div>
       <main>
         {pages}
-        {tab === 'map' && map}
+        {tab === 'map' && (
+          <>
+            {findSeatBar}
+            {map}
+          </>
+        )}
       </main>
       <DrawingFooter />
     </div>
