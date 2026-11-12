@@ -43,6 +43,11 @@ export class ClockService {
     return dateFmt.format(this.now());
   }
 
+  /** Malaysia date of a real-world timestamp (e.g. a Slack message), shifted by the demo clock. */
+  appDateOf(epochMs: number): string {
+    return dateFmt.format(new Date(epochMs + this.offsetMs));
+  }
+
   /** HH:MM in Malaysia time. */
   localTime(): string {
     return timeFmt.format(this.now());

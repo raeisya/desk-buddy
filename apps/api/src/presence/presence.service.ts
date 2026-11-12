@@ -43,4 +43,8 @@ export class PresenceService {
     this.events.emit({ type: 'floor-changed', date });
     return this.repo.findOneByOrFail({ userId: input.userId, date });
   }
+
+  find(userId: string, date: string): Promise<Presence | null> {
+    return this.repo.findOneBy({ userId, date });
+  }
 }

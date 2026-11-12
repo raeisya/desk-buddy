@@ -9,6 +9,7 @@ import { FloorModule } from './floor/floor.module';
 import { HealthController } from './health.controller';
 import { PresenceModule } from './presence/presence.module';
 import { SeedModule } from './seed/seed.module';
+import { SlackModule } from './slack/slack.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -36,6 +37,7 @@ import { UsersModule } from './users/users.module';
     PresenceModule,
     FloorModule,
     SeedModule,
+    SlackModule,
   ],
   controllers: [HealthController],
 })
