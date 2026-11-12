@@ -23,9 +23,19 @@ function save(id: string | null) {
   }
 }
 
+/** After "Sign in with Slack" the API redirects to `/#slack=<userId>`: take that as the persona. */
+function readSlackSignIn(): string | null {
+  const match = /^#slack=(.+)$/.exec(window.location.hash)
+  if (!match || match[1] === 'error') return null // the login page shows the error
+  const id = decodeURIComponent(match[1])
+  history.replaceState(null, '', window.location.pathname + window.location.search)
+  save(id)
+  return id
+}
+
 export function PersonaProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<UserSummary[]>([])
-  const [personaId, setPersonaId] = useState<string | null>(readSaved)
+  const [personaId, setPersonaId] = useState<string | null>(() => readSlackSignIn() ?? readSaved())
 
   useEffect(() => {
     api.getUsers().then(setUsers, () => setUsers([]))

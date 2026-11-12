@@ -75,7 +75,7 @@
   padding: 0 clamp(14px, 2vw, 28px) clamp(14px, 2.6vh, 28px);
 }
 .login-slack { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
-.login-slack .db-btn { width: 100%; }
+.login-slack .db-btn { width: 100%; box-sizing: border-box; text-decoration: none; }
 
 .login-footer { width: min(1040px, 100%); padding-top: 8px; }
 
