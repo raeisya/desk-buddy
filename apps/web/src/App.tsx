@@ -5,12 +5,11 @@ import { PixelOffice } from './components/PixelOffice'
 import { useFloor } from './hooks/useFloor'
 import { Login } from './pages/Login'
 import { usePersona } from './persona/personaContext'
-import { PersonaSwitcher } from './persona/PersonaSwitcher'
 import { DrawingFooter, MapFrame, PanelHint, TitleBlock } from './theme/Chrome'
 
 export default function App() {
   const { floor, error, live, reload } = useFloor()
-  const { persona, users } = usePersona()
+  const { persona, users, setPersona } = usePersona()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   // Look the desk up in the latest floor so the panel updates live when state changes.
   const selected = floor?.desks.find((d) => d.id === selectedId) ?? null
@@ -27,9 +26,15 @@ export default function App() {
 
   return (
     <div className="app">
-      <TitleBlock floor={floor} live={live} persona={persona}>
-        <PersonaSwitcher />
-      </TitleBlock>
+      <TitleBlock
+        floor={floor}
+        live={live}
+        persona={persona}
+        onLogout={() => {
+          setSelectedId(null)
+          setPersona(null) // → login page
+        }}
+      />
 
       <main>
         {error && <p className="error">Can't reach the API: {error}</p>}
