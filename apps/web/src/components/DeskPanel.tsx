@@ -7,6 +7,8 @@ interface Props {
   desk: FloorDesk
   persona: UserSummary | null
   onClose: () => void
+  /** Refetch the floor. The live stream usually does this, but it may be down (venue Wi-Fi). */
+  onChanged: () => void
 }
 
 type Action = 'take' | 'leave' | null
@@ -19,7 +21,7 @@ function actionFor(desk: FloorDesk, persona: UserSummary | null): Action {
 }
 
 /** Privacy: never shows why an owner is away (MC etc.) — the API doesn't send it either. */
-export function DeskPanel({ desk, persona, onClose }: Props) {
+export function DeskPanel({ desk, persona, onClose, onChanged }: Props) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const action = actionFor(desk, persona)
@@ -29,12 +31,14 @@ export function DeskPanel({ desk, persona, onClose }: Props) {
     setBusy(true)
     setError(null)
     try {
-      // The map refreshes itself from the live stream; no manual reload needed.
       if (action === 'take') await api.claimDesk(desk.id, persona.id)
       else await api.releaseDesk(desk.id, persona.id)
     } catch (e) {
       setError((e as Error).message)
     } finally {
+      // Refetch either way (success, or "someone just took it"), so the map is right even if the
+      // live stream is down. When it's up this is a harmless duplicate fetch.
+      onChanged()
       setBusy(false)
     }
   }

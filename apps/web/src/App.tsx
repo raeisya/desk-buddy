@@ -7,7 +7,7 @@ import { usePersona } from './persona/personaContext'
 import { PersonaSwitcher } from './persona/PersonaSwitcher'
 
 export default function App() {
-  const { floor, error, live } = useFloor()
+  const { floor, error, live, reload } = useFloor()
   const { persona } = usePersona()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   // Look the desk up in the latest floor so the panel updates live when state changes.
@@ -41,6 +41,7 @@ export default function App() {
                 desk={selected}
                 persona={persona}
                 onClose={() => setSelectedId(null)}
+                onChanged={() => void reload()}
               />
             )}
           </div>

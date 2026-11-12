@@ -47,17 +47,33 @@ export class BookingsService {
       throw new ConflictException(this.whyNot(desk.state));
     }
 
-    const existing = await this.bookings.findOneBy({ userId, date, releasedAt: IsNull() });
-    if (existing) throw new ConflictException(`You already have ${existing.deskId} today. Leave it first.`);
+    // One seat per person. "Seated" includes owners who haven't posted (silent = in the office) — they
+    // have no booking, so a bookings-only check would let them appear at two desks at once.
+    const seatedAt = desks.find(
+      (d) => d.occupant?.id === userId || (d.state === 'occupied' && !d.occupant && d.owner?.id === userId),
+    );
+    if (seatedAt) {
+      throw new ConflictException(
+        seatedAt.occupant?.id === userId
+          ? `You already have ${seatedAt.id} today. Leave it first.`
+          : `You're at your own desk ${seatedAt.id} today.`,
+      );
+    }
 
     try {
       const saved = await this.bookings.save(this.bookings.create({ deskId, userId, date, checkedInAt: this.clock.now() }));
       this.events.emit({ type: 'floor-changed', date });
       return { id: saved.id, deskId, userId, date };
     } catch (e) {
-      // Lost a race: someone else took this desk (or this user booked elsewhere) between our check and insert.
+      // Lost a race between our checks and the insert; the partial unique indexes decide who wins.
       if (e instanceof QueryFailedError && (e as QueryFailedError & { code?: string }).code === UNIQUE_VIOLATION) {
-        throw new ConflictException('Someone just took that desk. Pick another one.');
+        const err = e as QueryFailedError & { constraint?: string; driverError?: { constraint?: string } };
+        const constraint = err.driverError?.constraint ?? err.constraint;
+        throw new ConflictException(
+          constraint === 'uq_bookings_active_user'
+            ? 'You already have a desk today. Leave it first.'
+            : 'Someone just took that desk. Pick another one.',
+        );
       }
       throw e;
     }

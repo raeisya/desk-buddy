@@ -14,6 +14,6 @@ const MALAY_PREFIX = new Set(['Mohd', 'Muhammad', 'Muhd', 'Nor', 'Nur', 'Nurul',
 export function shortName(fullName: string): string {
   const parts = fullName.trim().split(/\s+/)
   if (parts.length === 3 && SURNAME_FIRST.has(parts[0])) return `${parts[1]} ${parts[2]}`
-  if (parts.length >= 3 && MALAY_PREFIX.has(parts[0])) return parts[1]
+  if (parts.length >= 2 && MALAY_PREFIX.has(parts[0])) return parts[1]
   return parts[0] ?? fullName
 }

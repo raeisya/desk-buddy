@@ -105,7 +105,21 @@ try {
     r = await as(u1).take(ownersDesk.id)
     if (r.status === 201) made.push([u1, ownersDesk.id])
     check(`can't take a desk whose owner is in (${ownersDesk.id})`, r.status === 409, show(r))
+
+    // 9. that owner is already seated (no booking needed), so they can't also take a second desk
+    const owner = ownersDesk.owner.id
+    r = await as(owner).take(d2)
+    if (r.status === 201) made.push([owner, d2])
+    check(`owner already at their desk can't take another (${owner} → ${d2})`, r.status === 409, show(r))
   }
+
+  // 10. one person taps two different desks at the same instant: exactly one succeeds
+  const [x, y] = await Promise.all([as(u2).take(d2), as(u2).take(d3)])
+  if (x.status === 201) made.push([u2, d2])
+  if (y.status === 201) made.push([u2, d3])
+  const loser = x.status === 201 ? y : x
+  check('same person, two desks at once: exactly one succeeds', [x, y].filter((q) => q.status === 201).length === 1, `${show(x)} | ${show(y)}`)
+  check('…and the loser is told they already have a desk', /already have/.test(String(loser.data?.message ?? '')), show(loser))
 } catch (e) {
   failed++
   console.error(`❌ ${e.message}`)
