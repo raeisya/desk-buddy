@@ -2,9 +2,9 @@ import { useMemo, useState, type ReactNode } from 'react'
 import type { FloorDesk, FloorResponse, UserSummary } from '../api/contracts'
 import { shortName } from '../components/displayName'
 import { LangToggle, useLang, type StringKey } from '../i18n/lang'
-import { frameStyle, variantFor } from './characters'
 import { useNarrow } from './useNarrow'
 import { homeZoneFor, isFree, MAP_H, MAP_W, zonesOf, type Zone } from './zones'
+import { personFrameStyle } from '../components/characterArt'
 
 /*
  * Redline "drawing" chrome (C): title block, framed map, side-panel hint, footer.
@@ -57,7 +57,7 @@ export function TitleBlock({ floor, live, persona, onLogout }: TitleBlockProps) 
       <div className="tb-who">
         {persona && (
           <>
-            <span className="tb-sprite" style={frameStyle(variantFor(persona.id), 'down', 0)} aria-hidden="true" />
+            <span className="tb-sprite" style={personFrameStyle(persona.id, 'down', 0)} aria-hidden="true" />
             <div className="tb-who-text">
               <span className="tb-who-name">{persona.name}</span>
               <span className="tb-who-role">{t(personaRole(persona))} · {persona.team}</span>

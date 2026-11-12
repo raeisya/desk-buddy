@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { api } from '../api/client'
 import type { UserSummary } from '../api/contracts'
 import { PersonaContext } from './personaContext'
@@ -40,6 +40,18 @@ export function PersonaProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     api.getUsers().then(setUsers, () => setUsers([]))
   }, [])
+  // Refetch (e.g. after someone saves a new look). Keeps the current list if the request fails, and
+  // ignores a response older than the last one applied (overlapping refetches can land out of order).
+  const requested = useRef(0)
+  const applied = useRef(0)
+  const refreshUsers = useCallback(() => {
+    const seq = ++requested.current
+    api.getUsers().then((list) => {
+      if (seq < applied.current) return
+      applied.current = seq
+      setUsers(list)
+    }, () => undefined)
+  }, [])
 
   const setPersona = useCallback((user: UserSummary | null) => {
     setPersonaId(user?.id ?? null)
@@ -47,7 +59,7 @@ export function PersonaProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const persona = users.find((u) => u.id === personaId) ?? null
-  const value = useMemo(() => ({ persona, users, setPersona }), [persona, users, setPersona])
+  const value = useMemo(() => ({ persona, users, setPersona, refreshUsers }), [persona, users, setPersona, refreshUsers])
 
   return <PersonaContext.Provider value={value}>{children}</PersonaContext.Provider>
 }

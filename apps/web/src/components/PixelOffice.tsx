@@ -1,12 +1,13 @@
 import type { CSSProperties } from 'react'
 import type { FloorDesk } from '../api/contracts'
 import type { WalkerView } from '../hooks/useWalkers'
-import { CHARACTER_SHEET, frameStyle, seatPosition, variantFor } from '../theme/characters'
+import { CHARACTER_SHEET, seatPosition } from '../theme/characters'
 import { DESK_STATE_STYLE } from './deskStyles'
 import { shortName } from './displayName'
 import { KOPI_COUNTER, KOPI_MACHINE } from './kopi'
 import { OFFICE_MAP } from './officeMap'
 import { ownerAway, seatedPerson } from './seating'
+import { personFrameStyle } from './characterArt'
 
 const { width: MAP_W, height: MAP_H, src } = OFFICE_MAP
 const pct = (value: number, total: number) => `${(value / total) * 100}%`
@@ -100,7 +101,7 @@ export function PixelOffice({
                   top: pct(seat.y, MAP_H),
                   width: pct(CHARACTER_SHEET.frameWidth, MAP_W),
                   height: pct(CHARACTER_SHEET.frameHeight, MAP_H),
-                  ...frameStyle(variantFor(person.id), d.facing, SIT_FRAME),
+                  ...personFrameStyle(person.id, d.facing, SIT_FRAME),
                   ...typingStyle(person.id),
                 }}
               />
@@ -146,7 +147,7 @@ export function PixelOffice({
                 top: pct(w.y, MAP_H),
                 width: pct(CHARACTER_SHEET.frameWidth, MAP_W),
                 height: pct(CHARACTER_SHEET.frameHeight, MAP_H),
-                ...frameStyle(variantFor(w.personId), w.dir, w.column),
+                ...personFrameStyle(w.personId, w.dir, w.column),
               }}
             />
             {!w.bubble && (

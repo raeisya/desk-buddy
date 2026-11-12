@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { LangToggle, useLang } from '../i18n/lang'
 import { usePersona } from '../persona/personaContext'
-import { frameStyle, variantFor } from '../theme/characters'
 import './login.css'
+import { personFrameStyle } from '../components/characterArt'
 
 /** The demo journeys, in the order the pitch tells them. */
 const FEATURED = [
@@ -51,7 +51,7 @@ export function Login() {
         <div className="login-personas">
           {featured.map(({ user, chip, chipClass, blurb }) => (
             <button key={user.id} type="button" className="persona-card" onClick={() => setPersona(user)}>
-              <span className="persona-sprite" style={frameStyle(variantFor(user.id), 'down', 0)} aria-hidden="true" />
+              <span className="persona-sprite" style={personFrameStyle(user.id, 'down', 0)} aria-hidden="true" />
               <span className="persona-text">
                 <span className="persona-name">{user.name}</span>
                 <span className={`db-chip ${chipClass}`}>
