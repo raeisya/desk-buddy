@@ -16,7 +16,9 @@ const USER_SCOPES = 'users.profile:read,users.profile:write';
  * "Connect Slack" on the Me page (C): the person lets DeskBuddy set their Slack status, so a status
  * changed in DeskBuddy shows in Slack too. Separate from "Sign in with Slack" (OpenID Connect can't
  * grant users.profile:write). The callback path sits under the sign-in callback URL, so the Slack app's
- * existing Redirect URL covers it. Needs SLACK_CLIENT_ID/SECRET and the two User Token Scopes above.
+ * existing Redirect URL covers it. Needs SLACK_CLIENT_ID/SECRET, the two User Token Scopes above on the
+ * Slack app, and SLACK_STATUS_SYNC=on. Off by default: without the scopes Slack shows an error page, so the
+ * Me page hides the button. Reading statuses (Slack → DeskBuddy) works either way.
  */
 @Controller()
 export class SlackStatusController {
@@ -28,18 +30,27 @@ export class SlackStatusController {
     @InjectRepository(User) private readonly users: Repository<User>,
   ) {}
 
-  /** GET /api/slack/status-link?userId= → { connected } for the Me page. */
+  /** GET /api/slack/status-link?userId= → { available, connected } for the Me page. */
   @Get('slack/status-link')
-  async link(@Query('userId') userId?: string): Promise<{ connected: boolean }> {
+  async link(@Query('userId') userId?: string): Promise<{ available: boolean; connected: boolean }> {
     if (!userId || !(await this.users.existsBy({ id: userId }))) throw new NotFoundException('No such user');
-    return { connected: await this.slackStatus.isConnected(userId) };
+    return { available: this.available(), connected: await this.slackStatus.isConnected(userId) };
+  }
+
+  /** Two-way sync is switched on and the Slack app keys are set. */
+  private available(): boolean {
+    return (
+      this.config.get<string>('SLACK_STATUS_SYNC') === 'on' &&
+      !!this.config.get<string>('SLACK_CLIENT_ID') &&
+      !!this.config.get<string>('SLACK_CLIENT_SECRET')
+    );
   }
 
   /** GET /api/auth/slack/status — send the browser to Slack's "Allow DeskBuddy to…" page. */
   @Get('auth/slack/status')
   start(@Req() req: Request, @Res() res: Response) {
     const clientId = this.config.get<string>('SLACK_CLIENT_ID');
-    if (!clientId || !this.config.get<string>('SLACK_CLIENT_SECRET')) return res.redirect('/#slack-status=error');
+    if (!clientId || !this.available()) return res.redirect('/#slack-status=error');
     const state = randomBytes(16).toString('hex');
     res.cookie(STATE_COOKIE, state, {
       httpOnly: true,

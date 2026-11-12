@@ -54,11 +54,17 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
   const [busy, setBusy] = useState<PresenceStatus | null>(null)
   // Slack status sync: connected = a status set here is mirrored to the person's Slack status.
   const [slackLinked, setSlackLinked] = useState<boolean | null>(null)
+  // Two-way sync switched on for this deployment (needs extra Slack app permissions); else no button.
+  const [slackSync, setSlackSync] = useState(false)
   const [slackReturn] = useState(readSlackReturn)
   useEffect(() => {
     let alive = true
     api.getSlackStatusLink(persona.id).then(
-      (r) => alive && setSlackLinked(r.connected),
+      (r) => {
+        if (!alive) return
+        setSlackLinked(r.connected)
+        setSlackSync(r.available)
+      },
       () => alive && setSlackLinked(false),
     )
     return () => {
@@ -314,6 +320,7 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
             Easier still: post in your team's Slack channel, e.g. <q>WFH today</q>, or set your Slack status. DeskBuddy reads both.
           </span>
         </p>
+        {(slackSync || slackLinked) && (
         <div className="me-slack me-slack--sync">
           {slackLinked ? (
             <span className="me-sync-on">✓ Synced: changing your status here updates your Slack status too.</span>
@@ -332,6 +339,7 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
           )}
           {slackReturn === 'ok' && slackLinked && <span className="me-msg" role="status">Slack connected.</span>}
         </div>
+        )}
       </div>
     </section>
   )
