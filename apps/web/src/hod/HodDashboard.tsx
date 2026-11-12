@@ -149,6 +149,7 @@ export function HodDashboard({ floor, persona, users, onChanged }: Props) {
                 </dd>
               </div>
             </dl>
+            <AssignSeats floor={floor} persona={persona} users={users} onChanged={onChanged} />
             <div className="hod-callout">
               <p className="hod-callout__big">
                 Room for <strong>~{cap.roomForMore}</strong> more staff
@@ -162,7 +163,6 @@ export function HodDashboard({ floor, persona, users, onChanged }: Props) {
         </div>
       </div>
 
-      <AssignSeats floor={floor} persona={persona} users={users} onChanged={onChanged} />
 
       <div className="db-panel">
         <div className="db-panel__head">

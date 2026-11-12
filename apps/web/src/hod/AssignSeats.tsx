@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { api } from '../api/client'
 import type { FloorDesk, FloorResponse, UserSummary } from '../api/contracts'
 import { DeskPickerMap } from '../theme/DeskPickerMap'
+import { Modal } from '../theme/Modal'
 import { PersonPicker, type PersonOption } from '../theme/PersonPicker'
 import { useNarrow } from '../theme/useNarrow'
 
@@ -14,7 +15,8 @@ interface Props {
 }
 
 /**
- * HOD gives a permanent desk (C): click a green desk on the map, type who gets it, Assign.
+ * HOD gives a permanent desk (C): a button in the new-joiner card opens a pop-up with the floor map;
+ * click a green desk, type who gets it, Assign.
  * Only desks with no owner. Someone who already has a desk moves (their old one is freed).
  * The API re-checks everything (HOD: own team only; desk still has no owner).
  */
@@ -24,6 +26,7 @@ export function AssignSeats({ floor, persona, users, onChanged }: Props) {
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
   const narrow = useNarrow()
+  const [open, setOpen] = useState(false)
 
   const deskOf = new Map(floor.desks.flatMap((d) => (d.owner ? [[d.owner.id, d.id] as const] : [])))
   const teamZones = new Set(floor.desks.filter((d) => d.owner?.team === persona.team).map((d) => d.zone))
@@ -51,6 +54,7 @@ export function AssignSeats({ floor, persona, users, onChanged }: Props) {
     try {
       await api.setDeskOwner(persona.id, desk.id, person.id)
       setMessage({ ok: true, text: `${desk.id} is now ${person.name}'s permanent desk.` })
+      setOpen(false)
       setDeskId(null)
       setPerson(null)
       onChanged()
@@ -83,38 +87,59 @@ export function AssignSeats({ floor, persona, users, onChanged }: Props) {
     </div>
   )
 
+  const who = persona.role === 'admin' ? 'the company' : persona.team
+
   return (
-    <div className="db-panel">
-      <div className="db-panel__head">
-        <h2 className="db-panel__title">Give a permanent desk</h2>
-        <span className="db-panel__hint">
-          {deskless.length} in {persona.role === 'admin' ? 'the company' : persona.team} without one · {candidates.length} desks free to
-          assign
-        </span>
-      </div>
-      <div className="db-panel__body hod-assign">
-        {candidates.length === 0 ? (
-          <p className="muted">Every desk has an owner right now. People without one keep hot-seating.</p>
-        ) : (
-          <>
-            <p className="muted hod-assign__how">{narrow ? 'Pick a desk below the map' : 'Click a green desk'}, then type who gets it.</p>
-            <DeskPickerMap
-              floor={floor}
-              candidates={candidates}
-              team={persona.team}
-              youId={persona.id}
-              selectedId={deskId}
-              onSelect={select}
-              popover={popover}
-            />
-          </>
-        )}
-        {message && (
-          <p className={message.ok ? 'hod-assign__ok' : 'error'} role="status">
+    <div className="hod-assign">
+      <p className="hod-assign__line">
+        <strong>{deskless.length}</strong> in {who} without a desk · <strong>{candidates.length}</strong> desks free to assign
+      </p>
+      <button
+        type="button"
+        className="db-btn hod-assign__open"
+        aria-haspopup="dialog"
+        disabled={candidates.length === 0}
+        onClick={() => {
+          setOpen(true)
+          setMessage(null)
+        }}
+      >
+        Give a permanent desk ▶
+      </button>
+      {message?.ok && (
+        <p className="hod-assign__ok" role="status">
+          {message.text}
+        </p>
+      )}
+
+      <Modal
+        open={open}
+        title="Give a permanent desk"
+        onClose={() => {
+          setOpen(false)
+          setDeskId(null)
+          setPerson(null)
+        }}
+      >
+        <p className="muted modal__hint">
+          {narrow ? 'Pick a desk below the map' : 'Click a green desk'}, then type who gets it. {deskless.length} in {who} have no desk
+          yet; they're listed first.
+        </p>
+        <DeskPickerMap
+          floor={floor}
+          candidates={candidates}
+          team={persona.team}
+          youId={persona.id}
+          selectedId={deskId}
+          onSelect={select}
+          popover={popover}
+        />
+        {message && !message.ok && (
+          <p className="error" role="alert">
             {message.text}
           </p>
         )}
-      </div>
+      </Modal>
     </div>
   )
 }
