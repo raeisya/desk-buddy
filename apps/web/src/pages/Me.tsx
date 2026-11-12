@@ -4,6 +4,7 @@ import type { FloorResponse, PresenceStatus, UserSummary } from '../api/contract
 import { frameStyle, variantFor } from '../theme/characters'
 import { PageHeader } from '../theme/Chrome'
 import { DeskPickerMap } from '../theme/DeskPickerMap'
+import { useNarrow } from '../theme/useNarrow'
 import { floorDay } from '../theme/format'
 import './screens.css'
 
@@ -36,6 +37,7 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
   const [moveBusy, setMoveBusy] = useState<string | null>(null)
   const [moveMsg, setMoveMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [targetId, setTargetId] = useState<string | null>(null)
+  const narrow = useNarrow()
 
   const own = floor.desks.find((d) => d.owner?.id === persona.id) ?? null
   const sitting = floor.desks.find((d) => d.occupant?.id === persona.id) ?? null
@@ -135,7 +137,7 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
                 <p className="muted">Every desk has an owner right now. Ask your HOD.</p>
               ) : (
                 <>
-                  <p className="muted">Click a green desk to move there. Yours is outlined.</p>
+                  <p className="muted">{narrow ? 'Pick a desk below the map to move there.' : 'Click a green desk to move there. Yours is outlined.'}</p>
                   <DeskPickerMap
                     floor={floor}
                     candidates={movable}

@@ -62,7 +62,6 @@
 /* Give a permanent desk */
 .hod-assign { display: flex; flex-direction: column; gap: 10px; }
 .hod-assign__how { margin: 0; }
-.hod-assign__who { margin: 4px 0 0; font-size: 15px; }
 .hod-assign__ok { margin: 0; color: var(--rl-ok-ink); font-weight: 600; }
 .hod-assign .error { margin: 0; }
 

@@ -431,28 +431,16 @@ select:disabled { cursor: not-allowed; opacity: 0.6; }
 .picker-pop { position: absolute; z-index: 5; width: 320px; pointer-events: auto; }
 .picker-pop--inline { position: static; width: auto; }
 @media (max-width: 760px) {
-  /* Desks are ~18 px wide here: labels would collide; the chips below carry the desk ids. */
+  /* Desks are ~18 px wide here: labels would collide; the dropdown below carries the desk ids. */
   .picker-tag { display: none; }
   .picker-team span { top: -16px; padding: 0 4px; font-size: 10px; }
   .picker-current span { display: none; }
   .picker-desk { border-width: 2px; }
 }
 
-.picker-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.picker-chips button {
-  min-height: 40px;
-  padding: 0 12px;
-  font-family: var(--font-label);
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--rl-ok-ink);
-  background: var(--rl-ok-tint);
-  border: 2px solid var(--rl-ok);
-  border-radius: 0;
-  cursor: pointer;
-}
-.picker-chips button span { font-weight: 500; opacity: 0.75; }
-.picker-chips button.on { color: var(--rl-on-red); background: var(--rl-red); border-color: var(--rl-ink); }
+.picker-select { display: flex; flex-direction: column; gap: 4px; }
+.picker-select select { min-height: 44px; padding: 0 12px; font: inherit; font-size: 16px; color: var(--rl-ink); background-color: var(--rl-card); border: 2px solid var(--rl-line-soft); border-radius: 0; }
+.picker-select select:focus { border-color: var(--rl-red); outline: none; }
 
 .pick-card { display: flex; flex-direction: column; gap: 10px; padding: 16px; background: var(--rl-card); border: 2px solid var(--rl-red); box-shadow: 4px 4px 0 var(--rl-ink); }
 .pick-card__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }

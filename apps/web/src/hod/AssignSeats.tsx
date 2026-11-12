@@ -3,6 +3,7 @@ import { api } from '../api/client'
 import type { FloorDesk, FloorResponse, UserSummary } from '../api/contracts'
 import { DeskPickerMap } from '../theme/DeskPickerMap'
 import { PersonPicker, type PersonOption } from '../theme/PersonPicker'
+import { useNarrow } from '../theme/useNarrow'
 
 interface Props {
   floor: FloorResponse
@@ -22,6 +23,7 @@ export function AssignSeats({ floor, persona, users, onChanged }: Props) {
   const [person, setPerson] = useState<UserSummary | null>(null)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
+  const narrow = useNarrow()
 
   const deskOf = new Map(floor.desks.flatMap((d) => (d.owner ? [[d.owner.id, d.id] as const] : [])))
   const teamZones = new Set(floor.desks.filter((d) => d.owner?.team === persona.team).map((d) => d.zone))
@@ -95,7 +97,7 @@ export function AssignSeats({ floor, persona, users, onChanged }: Props) {
           <p className="muted">Every desk has an owner right now. People without one keep hot-seating.</p>
         ) : (
           <>
-            <p className="muted hod-assign__how">Click a green desk, then type who gets it.</p>
+            <p className="muted hod-assign__how">{narrow ? 'Pick a desk below the map' : 'Click a green desk'}, then type who gets it.</p>
             <DeskPickerMap
               floor={floor}
               candidates={candidates}
@@ -105,12 +107,6 @@ export function AssignSeats({ floor, persona, users, onChanged }: Props) {
               onSelect={select}
               popover={popover}
             />
-            {deskless.length > 0 && (
-              <p className="hod-assign__who">
-                <span className="db-label">Without a desk</span>{' '}
-                {deskless.map((u) => (u.id === 'u-aina' ? `${u.name} (new joiner)` : u.name)).join(' · ')}
-              </p>
-            )}
           </>
         )}
         {message && (
