@@ -77,8 +77,8 @@ export function Login() {
       </section>
 
       <footer className="tb-footer login-footer">
-        <span>Dwg DB-000 · Sign-in sheet</span>
-        <span>Scale 1:1 · Rev B</span>
+        <span>Demo personas · fictional company</span>
+        <span>Updated live from Slack</span>
       </footer>
     </div>
   )
