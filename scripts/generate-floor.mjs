@@ -9,7 +9,8 @@
 //   the middle, chairs on the outside. Row 0 facing 'down' (chair top half, desk bottom half),
 //   row 1 facing 'up' (desk top half, chair bottom half).
 //   Zone A/B/C pods at y=160, D/E/F at y=480; pods at x=96, 480, 864. Corridor y=288..480.
-// All people are fictional. Do not add real staff.
+// All people are fictional except the three team members (Alia, Shane, Raeisya; by consent).
+// Do not add other real staff. Emails stay @acme.example; Slack is linked by slackId only.
 
 import { writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -31,22 +32,23 @@ const TEAMS = {
     code: 'P',
     desks: 12,
     people: [
-      ['u-aina', 'Aina Zulkifli', 'hod'],
+      // Alia, Shane and Raeisya are the team (real first names, by consent). Everyone else is fictional.
+      ['u-alia', 'Alia', 'hod'],
       ['u-hafiz', 'Hafiz Rahim'],
       ['u-meiling', 'Tan Mei Ling'],
       ['u-arjun', 'Arjun Pillai'],
+      ['u-shane', 'Shane'],
+      ['u-raeisya', 'Raeisya'],
       ['u-izzati', 'Nurul Izzati Hassan'],
       ['u-kahwai', 'Chong Kah Wai'],
       ['u-ravi', 'Ravi Shankar'],
       ['u-amirul', 'Amirul Hakim Salleh'],
       ['u-jiahui', 'Ong Jia Hui'],
       ['u-haziq', 'Haziq Firdaus'],
-      ['u-deepa', 'Deepa Nair'],
-      ['u-kenneth', 'Kenneth Lau'],
+      ['u-aina', 'Aina Zulkifli'], // new joiner: no desk yet
       ['u-danial', 'Danial Hakim'],
       ['u-aisyah', 'Siti Aisyah Kamal'],
       ['u-zhihao', 'Yap Zhi Hao'],
-      ['u-thinesh', 'Thinesh Kumar'],
     ],
   },
   Data: {
@@ -145,6 +147,16 @@ const TEAMS = {
   },
 };
 
+// Slack member IDs of the demo accounts in our test workspace (not secrets; they only identify an account).
+// The Slack listener maps an incoming message to a person via users.slack_id.
+const SLACK_IDS = {
+  'u-hafiz': 'U0CGL2XK3HD',
+  'u-meiling': 'U0CHVR40NE4',
+  'u-alia': 'U0CGJGKR4BZ',
+  'u-shane': 'U0CH3K0HXV2',
+  'u-raeisya': 'U0CGTKZ981Z',
+};
+
 // ── Floor ────────────────────────────────────────────────────────────────────
 // Which team owns each seat, per pod: row 0 (5 seats) then row 1 (5 seats). '-' = unassigned hot desk.
 // Seats went first-come, so teams spill into each other's zones. Data is always split (Zone B + Zone E).
@@ -160,11 +172,13 @@ const ZONES = [
 // Today's presence. Demo characters are pinned; everyone else is drawn from a seeded distribution.
 // Missing from the file = hasn't posted yet (desk shows "away" until the release cutoff).
 const PINNED_PRESENCE = {
-  'u-aina': 'IN_OFFICE', // HOD persona
+  'u-alia': 'IN_OFFICE', // HOD persona
   'u-hafiz': null, // demo owner: silent at start, posts "wfh today" live
   'u-arjun': null, // no-show owner: auto-released when the demo clock passes 10:00
   'u-meiling': 'IN_OFFICE',
-  'u-danial': 'IN_OFFICE', // junior persona with no desk
+  'u-shane': 'IN_OFFICE',
+  'u-raeisya': 'IN_OFFICE',
+  'u-aina': 'IN_OFFICE', // new joiner persona: no desk, claims the freed one near her team
   'u-farah': 'IN_OFFICE',
   'u-syafiq': 'MC',
 };
@@ -193,7 +207,7 @@ const queueByCode = {};
 for (const [team, t] of Object.entries(TEAMS)) {
   const holders = [];
   t.people.forEach(([id, name, role = 'staff'], i) => {
-    users.push({ id, name, email: `${id.slice(2)}@acme.example`, team, role, slackId: null });
+    users.push({ id, name, email: `${id.slice(2)}@acme.example`, team, role, slackId: SLACK_IDS[id] ?? null });
     if (i < t.desks) holders.push(id);
   });
   queueByCode[t.code] = holders;
@@ -225,6 +239,9 @@ ZONES.forEach((zone, z) => {
     });
   });
 });
+for (const id of Object.keys(SLACK_IDS)) {
+  if (!users.some((u) => u.id === id)) throw new Error(`SLACK_IDS: unknown user ${id}`);
+}
 for (const [code, left] of Object.entries(queueByCode)) {
   if (left.length) throw new Error(`Team ${code}: ${left.length} desk holders without a seat (${left.join(', ')})`);
 }
