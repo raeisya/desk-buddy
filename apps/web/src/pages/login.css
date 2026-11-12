@@ -34,7 +34,7 @@
 
 .login-personas {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: clamp(12px, 2vw, 24px);
   padding: clamp(14px, 2.6vh, 28px) clamp(14px, 2vw, 28px);
 }

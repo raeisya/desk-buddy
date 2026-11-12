@@ -2,12 +2,16 @@ import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import type { FloorResponse, HodHeatmapResponse, HodTodayResponse, UserSummary } from '../api/contracts'
 import { PageHeader } from '../theme/Chrome'
+import { AssignSeats } from './AssignSeats'
 import { capacity, heatStep, teamRows, WEEKDAYS } from './capacity'
 import './hod.css'
 
 interface Props {
   floor: FloorResponse
   persona: UserSummary
+  /** Active people, for "Give a permanent desk". */
+  users: UserSummary[]
+  onChanged: () => void
 }
 
 const fmtDay = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' })
@@ -18,7 +22,7 @@ const day = (iso: string) => new Date(`${iso}T00:00:00Z`)
  * HOD dashboard (C): today per team, 4-week desk use, and room for new joiners.
  * Privacy: counts per team only, never names. Absence reasons appear here and nowhere else.
  */
-export function HodDashboard({ floor, persona }: Props) {
+export function HodDashboard({ floor, persona, users, onChanged }: Props) {
   const [today, setToday] = useState<HodTodayResponse | null>(null)
   const [heat, setHeat] = useState<HodHeatmapResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -157,6 +161,8 @@ export function HodDashboard({ floor, persona }: Props) {
           </div>
         </div>
       </div>
+
+      <AssignSeats floor={floor} persona={persona} users={users} onChanged={onChanged} />
 
       <div className="db-panel">
         <div className="db-panel__head">

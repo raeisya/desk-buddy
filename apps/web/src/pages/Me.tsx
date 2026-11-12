@@ -31,6 +31,9 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
   const [busy, setBusy] = useState<PresenceStatus | null>(null)
   const [lastSet, setLastSet] = useState<PresenceStatus | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [moving, setMoving] = useState(false)
+  const [moveBusy, setMoveBusy] = useState<string | null>(null)
+  const [moveMsg, setMoveMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
   const own = floor.desks.find((d) => d.owner?.id === persona.id) ?? null
   const sitting = floor.desks.find((d) => d.occupant?.id === persona.id) ?? null
@@ -40,6 +43,27 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
   const headline = active ? STATUSES.find((s) => s.id === active)!.label : ownerOut ? 'Away' : 'No desk yet'
   const out = active !== null ? active !== 'IN_OFFICE' : ownerOut
   const tone = active === 'IN_OFFICE' ? ' me-status--in' : out ? ' me-status--out' : ''
+
+  // Desks you could move your permanent seat to: no owner, your team's zones first.
+  const teamZones = new Set(floor.desks.filter((d) => d.owner?.team === persona.team).map((d) => d.zone))
+  const movable = floor.desks
+    .filter((d) => !d.owner)
+    .sort((a, b) => Number(teamZones.has(b.zone)) - Number(teamZones.has(a.zone)) || a.id.localeCompare(b.id))
+
+  async function move(deskId: string) {
+    setMoveBusy(deskId)
+    setMoveMsg(null)
+    try {
+      const r = await api.moveMyDesk(persona.id, deskId)
+      setMoveMsg({ ok: true, text: `Moved. ${r.to} is your desk now; ${r.from} is free for someone else.` })
+      setMoving(false)
+      onChanged()
+    } catch (e) {
+      setMoveMsg({ ok: false, text: (e as Error).message })
+    } finally {
+      setMoveBusy(null)
+    }
+  }
 
   async function set(status: PresenceStatus) {
     setBusy(status)
@@ -96,6 +120,40 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
             )}
           </div>
         </div>
+
+        {own && (
+          <div className="me-move">
+            <div className="me-move__head">
+              <h2 className="db-label">Permanent desk: {own.id}</h2>
+              <button type="button" className="db-btn db-btn--secondary me-move__toggle" aria-expanded={moving} onClick={() => setMoving((m) => !m)}>
+                {moving ? 'Cancel' : 'Change desk'}
+              </button>
+            </div>
+            {moving &&
+              (movable.length === 0 ? (
+                <p className="muted">Every desk has an owner right now. Ask your HOD.</p>
+              ) : (
+                <ul className="me-move__list">
+                  {movable.map((d) => (
+                    <li key={d.id}>
+                      <span>
+                        <strong>{d.id}</strong> · {d.zone}
+                        {teamZones.has(d.zone) && <span className="me-move__near">near your team</span>}
+                      </span>
+                      <button type="button" className="db-btn me-move__btn" disabled={moveBusy !== null} onClick={() => move(d.id)}>
+                        {moveBusy === d.id ? 'Moving…' : 'Move here'}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ))}
+            {moveMsg && (
+              <p className={moveMsg.ok ? 'me-msg' : 'error'} role="status">
+                {moveMsg.text}
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="me-fix">
           <h2 className="db-label">Not right? Tap to fix</h2>

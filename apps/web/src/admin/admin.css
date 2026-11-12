@@ -1,0 +1,62 @@
+/* Staff page for admins (C). Redline tokens from theme/theme.css. */
+
+.admin-tools { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 16px; padding: 14px 16px; border-bottom: 1px solid var(--rl-line-soft); }
+.admin-tools label { display: flex; flex-direction: column; gap: 4px; }
+.admin-search { flex: 1 1 220px; }
+.admin-tools input,
+.admin-tools select,
+.admin-table select {
+  min-height: 40px;
+  padding: 0 10px;
+  font: inherit;
+  font-size: 16px;
+  color: var(--rl-ink);
+  background: var(--rl-card);
+  border: 2px solid var(--rl-line-soft);
+  border-radius: 0;
+}
+.admin-tools input:focus,
+.admin-tools select:focus,
+.admin-table select:focus { border-color: var(--rl-red); outline: none; }
+
+.admin-show { display: flex; border: 2px solid var(--rl-red); }
+.admin-show button {
+  min-height: 40px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--rl-red);
+  background: var(--rl-card);
+  border: 0;
+  border-left: 2px solid var(--rl-red);
+  cursor: pointer;
+}
+.admin-show button:first-child { border-left: 0; }
+.admin-show button.on { color: var(--rl-on-red); background: var(--rl-red); }
+
+.admin-error { margin: 0; padding: 10px 16px; }
+.admin-scroll { overflow-x: auto; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 16px; }
+.admin-table th,
+.admin-table td { padding: 8px 12px; border-bottom: 1px solid var(--rl-line-soft); text-align: left; vertical-align: middle; }
+.admin-table thead th { font-family: var(--font-label); font-size: 13px; font-weight: 600; color: var(--rl-muted); text-transform: uppercase; background: var(--rl-paper); }
+.admin-table tbody th { font-weight: 600; }
+.admin-person { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+.admin-sprite { width: 20px; height: 30px; flex-shrink: 0; }
+.admin-you { margin-left: 8px; padding: 1px 6px; font-family: var(--font-label); font-size: 12px; color: var(--rl-on-red); background: var(--rl-red); }
+.admin-desk { font-family: var(--font-label); font-weight: 600; white-space: nowrap; }
+.admin-act { text-align: right !important; }
+.admin-btn { min-height: 36px; padding: 0 12px; font-size: 15px; white-space: nowrap; }
+.admin-off th,
+.admin-off td { color: var(--rl-muted); background: var(--rl-paper); }
+.admin-off .admin-sprite { opacity: 0.45; filter: grayscale(1); }
+.admin-empty { text-align: center !important; padding: 24px !important; }
+.admin-foot { margin: 0; padding: 10px 16px; font-size: 14px; }
+
+@media (max-width: 760px) {
+  .admin-table { font-size: 15px; }
+  .admin-table th,
+  .admin-table td { padding: 8px; }
+  .admin-sprite { display: none; }
+}
