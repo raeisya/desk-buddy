@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { api } from '../api/client'
 import type { FloorResponse, PresenceStatus, UserSummary } from '../api/contracts'
+import { PageHeader } from '../theme/Chrome'
+import { floorDay } from '../theme/format'
 import './screens.css'
 
 const STATUSES: { id: PresenceStatus; label: string }[] = [
@@ -56,7 +58,11 @@ export function Me({ floor, persona, onChanged }: Props) {
 
   return (
     <section className="tab-screen">
-      <h1 className="screen-title">Today you're</h1>
+      <PageHeader
+        title="Today you're"
+        meta={floorDay(floor)}
+        note="DeskBuddy reads your Slack posts. If it got you wrong, fix it here."
+      />
 
       <div className="db-panel">
         <div className="db-panel__head">

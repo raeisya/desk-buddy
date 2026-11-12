@@ -10,8 +10,6 @@
   flex-direction: column;
   gap: 16px;
 }
-.hod-head { display: flex; flex-direction: column; gap: 2px; }
-.hod-head p { margin: 0; }
 
 .sr-only {
   position: absolute;

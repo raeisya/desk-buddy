@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import type { FloorResponse, HodHeatmapResponse, HodTodayResponse, UserSummary } from '../api/contracts'
+import { PageHeader } from '../theme/Chrome'
 import { capacity, heatStep, teamRows, WEEKDAYS } from './capacity'
 import './hod.css'
 
@@ -49,12 +50,12 @@ export function HodDashboard({ floor, persona }: Props) {
 
   return (
     <section className="hod">
-      <div className="hod-head">
-        <h1 className="screen-title">Team today</h1>
-        <p className="muted">
-          {fmtDay.format(day(today.date))} · counts per team, no names. Absence reasons are visible to HODs only.
-        </p>
-      </div>
+      <PageHeader
+        title="Team today"
+        meta={fmtDay.format(day(today.date))}
+        note="Counts per team, no names. Absence reasons stay on this page."
+        chip="HOD only"
+      />
 
       <div className="hod-tiles">
         <Tile label="In office" value={inToday} sub={`of ${cap.staff} staff · ${silent} didn't post, counted in`} />

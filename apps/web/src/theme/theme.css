@@ -340,6 +340,31 @@ body {
   .tb-footer { display: none; }
 }
 
+/* ── Page header: red band that opens each tab page (Find seat, Me, Team) ─ */
+.page-head { background: var(--rl-card); border: 2px solid var(--rl-red); box-shadow: 4px 4px 0 var(--rl-ink); }
+.page-head__band {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 16px;
+  padding: 14px 18px;
+  background: var(--rl-red);
+  color: var(--rl-on-red);
+}
+.page-head__title { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 26px; line-height: 1.1; text-transform: uppercase; }
+.page-head__meta { font-size: 16px; font-weight: 600; color: var(--rl-on-red-muted); white-space: nowrap; }
+.page-head__strip { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 18px; }
+.page-head__strip p { margin: 0; font-size: 16px; color: var(--rl-muted); }
+.page-head__chip { flex-shrink: 0; }
+@media (max-width: 760px) {
+  .page-head__band { padding: 12px 14px; }
+  .page-head__title { font-size: 21px; }
+  .page-head__meta { font-size: 14px; }
+  .page-head__strip { padding: 10px 14px; }
+  .page-head__strip p { font-size: 15px; }
+}
+
 /* ── Building blocks for new screens (login, HOD dashboard) ────────────── */
 .db-panel { background: var(--rl-card); border: 2px solid var(--rl-red); box-shadow: 4px 4px 0 var(--rl-ink); }
 .db-panel__head {

@@ -1,7 +1,6 @@
 /* Find seat + Me tabs, phone and desktop (C). Redline tokens from theme/theme.css. */
 
 .tab-screen { display: flex; flex-direction: column; gap: 14px; }
-.screen-title { margin: 4px 0 0; font-size: 24px; font-weight: 600; }
 .screen-subtitle { margin: 0; font-size: 17px; font-weight: 600; }
 .screen-stack { display: flex; flex-direction: column; gap: 10px; }
 .screen-stack .db-label,
