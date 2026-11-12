@@ -1,12 +1,16 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { DeskPanel } from './components/DeskPanel'
 import { Legend } from './components/Legend'
 import { PixelOffice } from './components/PixelOffice'
 import { isFree, suggestSeat } from './components/seating'
 import { useFloor } from './hooks/useFloor'
+import { FindSeat } from './pages/FindSeat'
 import { Login } from './pages/Login'
+import { Me } from './pages/Me'
 import { usePersona } from './persona/personaContext'
+import { AppNav, type AppTab } from './theme/AppNav'
 import { DrawingFooter, MapFrame, PanelHint, TitleBlock } from './theme/Chrome'
+import { useNarrow } from './theme/useNarrow'
 
 interface Suggestion {
   personaId: string
@@ -19,8 +23,10 @@ export default function App() {
   const { persona, users, setPersona } = usePersona()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null)
+  const [tab, setTab] = useState<AppTab>('map')
   // Look the desk up in the latest floor so the panel updates live when state changes.
   const selected = floor?.desks.find((d) => d.id === selectedId) ?? null
+  const narrow = useNarrow()
   // A suggestion belongs to the persona who asked (switching persona hides it), and a desk suggestion
   // only stays up while that desk is still free — once anyone sits there, the note would be stale.
   const suggestedDesk = suggestion?.deskId ? floor?.desks.find((d) => d.id === suggestion.deskId) : undefined
@@ -39,6 +45,13 @@ export default function App() {
     if (focusId) setSelectedId(focusId)
   }
 
+  // Phone: the desk panel sits below the map, so bring it into view when a desk is picked.
+  useEffect(() => {
+    if (narrow && tab === 'map' && selectedId) {
+      document.querySelector('.desk-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [narrow, tab, selectedId])
+
   // Users load async; until then a saved persona can't resolve, so don't flash the login page.
   if (users.length === 0) {
     return (
@@ -49,57 +62,114 @@ export default function App() {
   }
   if (!persona) return <Login />
 
-  return (
-    <div className="app">
-      <TitleBlock
-        floor={floor}
-        live={live}
-        persona={persona}
-        onLogout={() => {
-          setSelectedId(null)
-          setPersona(null) // → login page
-        }}
-      />
+  const header = (
+    <TitleBlock
+      floor={floor}
+      live={live}
+      persona={persona}
+      onLogout={() => {
+        setSelectedId(null)
+        setTab('map')
+        setPersona(null) // → login page
+      }}
+    />
+  )
 
+  // B's "Find me a seat near <team>" (#10): marks the desk on the map and opens the panel.
+  const findSeatBar = floor && (
+    <div className="find-seat">
+      <button type="button" className="px-button primary" onClick={findSeat}>
+        Find me a seat near {persona.team}
+      </button>
+      {activeSuggestion && <p aria-live="polite">{activeSuggestion.note}</p>}
+    </div>
+  )
+
+  const map = floor && (
+    <div className="map-wrap">
+      <MapFrame floor={floor} users={users} legend={<Legend />} homeTeam={persona.team} onSelectDesk={(d) => setSelectedId(d.id)}>
+        <PixelOffice
+          desks={floor.desks}
+          selectedId={selectedId}
+          youId={persona.id}
+          suggestedId={activeSuggestion?.deskId ?? null}
+          onSelect={(d) => setSelectedId(d.id)}
+        />
+      </MapFrame>
+    </div>
+  )
+
+  const panel = selected ? (
+    <DeskPanel
+      key={selected.id /* fresh busy/error state per desk */}
+      desk={selected}
+      persona={persona}
+      note={activeSuggestion?.deskId === selected.id ? activeSuggestion.note : undefined}
+      onClose={() => setSelectedId(null)}
+      onChanged={() => void reload()}
+    />
+  ) : (
+    <PanelHint />
+  )
+
+  const pages = (
+    <>
+      {error && <p className="error">Can't reach the API: {error}</p>}
+      {tab === 'seat' && floor && (
+        <FindSeat
+          floor={floor}
+          persona={persona}
+          onChanged={() => void reload()}
+          onShowOnMap={(d) => {
+            setSelectedId(d.id)
+            setTab('map')
+          }}
+        />
+      )}
+      {tab === 'me' && floor && <Me floor={floor} persona={persona} onChanged={() => void reload()} />}
+    </>
+  )
+
+  // One tab at a time on every screen size: Map · Find seat · Me.
+  // Phone: nav fixed at the bottom (thumb reach), desk panel under the map.
+  if (narrow) {
+    return (
+      <div className="app app--phone">
+        {header}
+        <main>
+          {pages}
+          {tab === 'map' && floor && (
+            <>
+              {findSeatBar}
+              <div className="workspace">
+                {map}
+                {panel}
+              </div>
+            </>
+          )}
+        </main>
+        <AppNav tab={tab} onTab={setTab} placement="bottom" />
+      </div>
+    )
+  }
+
+  // Desktop: left column = nav + desk panel, so the map gets the whole right side.
+  return (
+    <div className="app app--desktop">
+      {header}
+      <div className="app-side">
+        <AppNav tab={tab} onTab={setTab} placement="side" />
+        {tab === 'map' && floor && panel}
+      </div>
       <main>
-        {error && <p className="error">Can't reach the API: {error}</p>}
-        {floor && persona && (
-          <div className="find-seat">
-            <button type="button" className="px-button primary" onClick={findSeat}>
-              Find me a seat near {persona.team}
-            </button>
-            {activeSuggestion && <p aria-live="polite">{activeSuggestion.note}</p>}
-          </div>
-        )}
-        {floor && (
-          <div className="workspace">
-            <div className="map-wrap">
-              <MapFrame floor={floor} users={users} legend={<Legend />}>
-                <PixelOffice
-                  desks={floor.desks}
-                  selectedId={selectedId}
-                  youId={persona?.id ?? null}
-                  suggestedId={activeSuggestion?.deskId ?? null}
-                  onSelect={(d) => setSelectedId(d.id)}
-                />
-              </MapFrame>
-            </div>
-            {selected ? (
-              <DeskPanel
-                key={selected.id /* fresh busy/error state per desk */}
-                desk={selected}
-                persona={persona}
-                note={activeSuggestion?.deskId === selected.id ? activeSuggestion.note : undefined}
-                onClose={() => setSelectedId(null)}
-                onChanged={() => void reload()}
-              />
-            ) : (
-              <PanelHint />
-            )}
-          </div>
+        {pages}
+        {tab === 'map' && (
+          <>
+            {findSeatBar}
+            {map}
+          </>
         )}
       </main>
-
       <DrawingFooter />
     </div>
   )

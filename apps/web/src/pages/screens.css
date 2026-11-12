@@ -1,0 +1,40 @@
+/* Find seat + Me tabs, phone and desktop (C). Redline tokens from theme/theme.css. */
+
+.tab-screen { display: flex; flex-direction: column; gap: 14px; }
+.screen-title { margin: 4px 0 0; font-size: 24px; font-weight: 600; }
+.screen-subtitle { margin: 0; font-size: 17px; font-weight: 600; }
+.screen-stack { display: flex; flex-direction: column; gap: 10px; }
+.screen-stack .db-label,
+.screen-stack p { margin: 0; }
+.screen-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.screen-desk { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 22px; text-transform: uppercase; }
+.screen-lead { font-size: 17px; line-height: 1.45; }
+.screen-cta { min-height: 56px; font-size: 20px; }
+.tab-screen .zone-viewport { margin: 0; border: 0; border-bottom: 2px solid var(--rl-red); }
+
+.status-chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.status-chips .status-chip:last-child { grid-column: span 2; }
+.status-chip {
+  min-height: 52px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--rl-red);
+  background: var(--rl-card);
+  border: 2px solid var(--rl-red);
+  border-radius: 0;
+  cursor: pointer;
+}
+.status-chip.on { color: var(--rl-on-red); background: var(--rl-red); border-color: var(--rl-ink); box-shadow: 3px 3px 0 var(--rl-ink); }
+.status-chip:disabled { cursor: progress; opacity: 0.7; }
+
+/* Desktop: a readable column under the tab strip, not stretched across 1600px */
+@media (min-width: 761px) {
+  .tab-screen { max-width: 960px; gap: 18px; }
+  /* Find seat: zone map left, desk details right */
+  .seat-card { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-items: stretch; }
+  .seat-card .zone-viewport { align-self: start; border-bottom: 0; border-right: 2px solid var(--rl-red); }
+  .status-chips { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .status-chips .status-chip:last-child { grid-column: auto; }
+  .screen-cta { justify-self: start; }
+}

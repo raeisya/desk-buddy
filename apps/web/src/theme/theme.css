@@ -117,7 +117,7 @@ body {
 /* ── Workspace: framed map + side panel ────────────────────────────────── */
 /* header + map band + legend + footer ≈ 300px of chrome; keep the map within one screen */
 .map-wrap { max-width: min(1280px, calc((100dvh - 300px) * 5 / 3)); }
-.workspace { gap: 16px; }
+.workspace { gap: 16px; justify-content: flex-start; } /* line up with the title block and tabs */
 .workspace .desk-panel,
 .workspace .panel-hint { flex: 0 0 340px; }
 .mapframe .db-panel__hint strong { color: var(--rl-on-red); }
@@ -180,18 +180,163 @@ body {
 .px-button.primary:hover:not(:disabled) { background: var(--rl-red-dark); }
 .px-button:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: none; }
 
-/* ── Phone width: stack everything ─────────────────────────────────────── */
+/* ── Phone zone view (rendered by MapFrame only on narrow screens) ─────── */
+.zone-picker { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 10px; }
+.zone-tile {
+  min-height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-family: var(--font-body);
+  color: var(--rl-ink);
+  background: var(--rl-paper);
+  border: 2px solid var(--rl-line-soft);
+  border-radius: 0;
+  cursor: pointer;
+}
+.zone-tile__name { font-family: var(--font-display); font-size: 15px; text-transform: uppercase; }
+.zone-tile__free { font-size: 13px; font-weight: 600; color: var(--rl-ok); }
+.zone-tile.on { color: var(--rl-on-red); background: var(--rl-red); border-color: var(--rl-ink); }
+.zone-tile.on .zone-tile__free { color: var(--rl-on-red); }
+
+.zone-viewport { position: relative; overflow: hidden; margin: 0 10px 10px; border: 2px solid var(--rl-red); }
+.zone-stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+
+.zone-free { display: flex; flex-direction: column; gap: 8px; padding: 0 10px 12px; }
+.zone-free h3 { margin: 4px 0 0; }
+.zone-free p { margin: 0; font-size: 15px; }
+.zone-free__item {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 12px;
+  font-family: var(--font-body);
+  font-size: 17px;
+  text-align: left;
+  color: var(--rl-ink);
+  background: var(--rl-card);
+  border: 2px solid var(--rl-ink);
+  border-radius: 0;
+  cursor: pointer;
+}
+.zone-free__item > span:first-child { display: flex; flex-direction: column; }
+.zone-free__sub { font-size: 14px; color: var(--rl-muted); }
+.zone-free__go { padding: 6px 12px; font-weight: 600; font-size: 16px; color: var(--rl-on-red); background: var(--rl-red); border: 2px solid var(--rl-ink); white-space: nowrap; }
+
+/* ── Main navigation (Map · Find seat · Me) ────────────────────────────── */
+.app-nav button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-body);
+  color: var(--rl-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+}
+.app-nav button:hover { color: var(--rl-red); }
+.app-nav button[aria-current='page'] { color: var(--rl-red); font-weight: 600; }
+
+/* Desktop: header across the top; left column = nav + desk panel; map/pages on the right */
+.app--desktop {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  align-items: start;
+  column-gap: 20px;
+}
+.app--desktop > header,
+.app--desktop > footer { grid-column: 1 / -1; }
+.app--desktop > main { grid-column: 2; min-width: 0; }
+.app-side {
+  grid-column: 1;
+  position: sticky;
+  top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.app-nav--side {
+  display: flex;
+  flex-direction: column;
+  background: var(--rl-card);
+  border: 2px solid var(--rl-red);
+  box-shadow: 4px 4px 0 var(--rl-ink);
+}
+.app-nav--side button {
+  min-height: 56px;
+  padding: 0 18px;
+  gap: 12px;
+  justify-content: flex-start;
+  font-size: 17px;
+  border-bottom: 1px solid var(--rl-line-soft);
+  border-left: 5px solid transparent;
+}
+.app-nav--side button:last-child { border-bottom: 0; }
+.app-nav--side button[aria-current='page'] { border-left-color: var(--rl-red); background: var(--rl-paper); }
+/* The map fills the right side, capped by screen height so the whole floor stays in view. */
+.app--desktop .map-wrap { max-width: min(1280px, calc((100dvh - 230px) * 5 / 3)); }
+
+/* Small laptops: narrower left column; header cells may wrap instead of overlapping */
+@media (max-width: 1200px) {
+  .app--desktop { grid-template-columns: 260px minmax(0, 1fr); column-gap: 14px; }
+  .tb-cells > div:nth-child(2) { display: none; } /* project name: static, first to go */
+  .tb-cells { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tb-cells dd { white-space: normal; font-size: 16px; }
+}
+
+/* Phone: fixed bar at the bottom */
+.app--phone { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+.app-nav--bottom {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--rl-card);
+  border-top: 2px solid var(--rl-red);
+}
+.app-nav--bottom button {
+  min-height: 60px;
+  margin-top: -2px;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+  border-top: 3px solid transparent;
+}
+.app-nav--bottom button[aria-current='page'] { border-top-color: var(--rl-red); }
+
+/* ── Phone width: compact header, stacked layout ───────────────────────── */
 @media (max-width: 760px) {
-  .app { padding: 12px; }
-  .tb { grid-template-columns: minmax(0, 1fr); }
-  .tb-cells { grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--rl-line-soft); }
-  .tb-cells > div { padding: 8px 10px; }
-  .tb-cells dd { font-size: 15px; white-space: normal; }
-  .tb-who { border-top: 1px solid var(--rl-line-soft); padding: 8px 12px; }
-  .tb-live { margin-left: auto; }
+  .app { padding: 10px; gap: 12px; }
+  .tb { grid-template-columns: minmax(0, 1fr); box-shadow: 3px 3px 0 var(--rl-ink); }
+  .tb-brand { flex-direction: row; align-items: center; justify-content: space-between; padding: 10px 14px; }
+  .tb-logo { font-size: 22px; }
+  .tb-tagline { display: none; }
+  .tb-cells { display: none; } /* drawing number / project / date: desktop only */
+  .tb-who { flex-wrap: wrap; gap: 10px; padding: 8px 12px; }
+  .tb-who-text { flex: 1; min-width: 0; }
+  .tb-who-name { font-size: 17px; overflow: hidden; text-overflow: ellipsis; }
+  .tb-who-role { white-space: normal; font-size: 13px; }
+  .tb-live { font-size: 13px; padding: 4px 8px; }
+  .tb-logout { min-height: 40px; }
+  .mapframe .db-panel__head { padding: 10px 12px; }
+  .mapframe .db-panel__title { font-size: 20px; }
+  .mapframe .db-panel__hint { font-size: 14px; }
+  .mapframe-legend { padding: 0 10px 10px; }
+  .mapframe-legend .legend { gap: 6px 14px; font-size: 14px; }
   .map-wrap { max-width: none; }
-  .workspace .desk-panel,
-  .workspace .panel-hint { flex-basis: auto; }
+  .workspace .desk-panel { flex-basis: auto; }
+  .workspace .panel-hint { display: none; } /* the "free here" list does this job on a phone */
+  .tb-footer { display: none; }
 }
 
 /* ── Building blocks for new screens (login, HOD dashboard) ────────────── */
