@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import type { FloorDesk, FloorResponse, UserSummary } from '../api/contracts'
+import { shortName } from '../components/displayName'
 import { frameStyle, variantFor } from './characters'
 import { useNarrow } from './useNarrow'
 import { homeZoneFor, isFree, MAP_H, MAP_W, zonesOf, type Zone } from './zones'
@@ -69,6 +70,34 @@ export function TitleBlock({ floor, live, persona, onLogout }: TitleBlockProps) 
           </button>
         )}
       </div>
+    </header>
+  )
+}
+
+interface PageHeaderProps {
+  title: string
+  /** Right side of the red band, e.g. the date. */
+  meta?: ReactNode
+  /** One line under the band. */
+  note?: ReactNode
+  /** Small label at the end of the note strip, e.g. "HOD only". */
+  chip?: string
+}
+
+/** Opening band for the tab pages (Find seat, Me, Team), matching the map's red frame header. */
+export function PageHeader({ title, meta, note, chip }: PageHeaderProps) {
+  return (
+    <header className="page-head">
+      <div className="page-head__band">
+        <h1 className="page-head__title">{title}</h1>
+        {meta && <span className="page-head__meta">{meta}</span>}
+      </div>
+      {(note || chip) && (
+        <div className="page-head__strip">
+          {note && <p>{note}</p>}
+          {chip && <span className="db-chip db-chip--red page-head__chip">{chip}</span>}
+        </div>
+      )}
     </header>
   )
 }
@@ -156,7 +185,7 @@ export function MapFrame({ floor, users, legend, homeTeam, onSelectDesk, childre
                 <span>
                   <strong>{d.id}</strong>
                   <span className="zone-free__sub">
-                    {d.owner ? `${d.owner.name.split(' ')[0]}'s desk · away today` : 'Hot desk'}
+                    {d.owner ? `${shortName(d.owner.name)}'s desk · away today` : 'Hot desk'}
                   </span>
                 </span>
                 <span className="zone-free__go">View ▶</span>

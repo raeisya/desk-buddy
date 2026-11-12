@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react'
+import type { Role } from '../api/contracts'
 
-export type AppTab = 'map' | 'seat' | 'me'
+export type AppTab = 'map' | 'seat' | 'me' | 'team' | 'admin'
 
 const TABS: { id: AppTab; label: string; icon: ReactElement }[] = [
   {
@@ -33,24 +34,47 @@ const TABS: { id: AppTab; label: string; icon: ReactElement }[] = [
       </svg>
     ),
   },
+  {
+    id: 'team',
+    label: 'Team',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+        <path d="M3 19V11M8 19V5M13 19V9M18 19V13" />
+      </svg>
+    ),
+  },
+  {
+    id: 'admin',
+    label: 'Staff',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+        <circle cx="8" cy="7" r="3" />
+        <path d="M2 19c.6-3.4 2.8-5 6-5s5.4 1.6 6 5" />
+        <path d="M15 6h5M15 10h5M17 14h3" />
+      </svg>
+    ),
+  },
 ]
 
 /**
- * Main navigation (C): Map · Find seat · Me.
+ * Main navigation (C): Map · Find seat · Me, plus Team (HOD, admin) and Staff (admin).
  * Phone: fixed bar at the bottom (thumb reach). Desktop: sidebar left of the content.
  */
 export function AppNav({
   tab,
   onTab,
   placement,
+  role = 'staff',
 }: {
   tab: AppTab
   onTab: (tab: AppTab) => void
   placement: 'side' | 'bottom'
+  /** Team dashboard for HODs and admins; Staff (admin page) for admins only. */
+  role?: Role
 }) {
   return (
     <nav className={`app-nav app-nav--${placement}`} aria-label="Main">
-      {TABS.map((t) => (
+      {TABS.filter((t) => tabAllowed(t.id, role)).map((t) => (
         <button key={t.id} type="button" aria-current={t.id === tab ? 'page' : undefined} onClick={() => onTab(t.id)}>
           {t.icon}
           {t.label}
@@ -58,4 +82,10 @@ export function AppNav({
       ))}
     </nav>
   )
+}
+
+function tabAllowed(tab: AppTab, role: Role): boolean {
+  if (tab === 'team') return role === 'hod' || role === 'admin'
+  if (tab === 'admin') return role === 'admin'
+  return true
 }

@@ -1,4 +1,13 @@
-import type { ClockResponse, FloorResponse, PresenceStatus, UserSummary } from './contracts'
+import type {
+  AdminUser,
+  AdminUserPatch,
+  ClockResponse,
+  FloorResponse,
+  HodHeatmapResponse,
+  HodTodayResponse,
+  PresenceStatus,
+  UserSummary,
+} from './contracts'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api${path}`, {
@@ -33,4 +42,18 @@ export const api = {
     request('/bookings', { method: 'POST', body: JSON.stringify({ deskId, userId }) }),
   releaseDesk: (deskId: string, userId: string) =>
     request('/bookings/release', { method: 'POST', body: JSON.stringify({ deskId, userId }) }),
+  // HOD dashboard (A's #9). Per-team counts may include reasons; the floor never does.
+  getHodToday: () => request<HodTodayResponse>('/hod/today'),
+  getHodHeatmap: () => request<HodHeatmapResponse>('/hod/heatmap'),
+  // Admin page + permanent seats (C). actorId = signed-in persona until real sessions exist.
+  getAdminUsers: (actorId: string) => request<AdminUser[]>(`/admin/users?actorId=${encodeURIComponent(actorId)}`),
+  updateUser: (actorId: string, userId: string, patch: AdminUserPatch) =>
+    request<AdminUser>(`/admin/users/${encodeURIComponent(userId)}`, { method: 'PATCH', body: JSON.stringify({ actorId, ...patch }) }),
+  setDeskOwner: (actorId: string, deskId: string, userId: string | null) =>
+    request(`/desks/${encodeURIComponent(deskId)}/owner`, { method: 'PUT', body: JSON.stringify({ actorId, userId }) }),
+  moveMyDesk: (userId: string, deskId: string) =>
+    request<{ from: string; to: string }>(`/desks/${encodeURIComponent(deskId)}/move`, {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    }),
 }

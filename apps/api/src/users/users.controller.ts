@@ -8,10 +8,10 @@ import { User } from '../entities';
 export class UsersController {
   constructor(@InjectRepository(User) private readonly users: Repository<User>) {}
 
-  /** GET /api/users — for the persona switcher. */
+  /** GET /api/users — for the persona switcher. Active people only (admin page lists everyone). */
   @Get()
   async list(): Promise<UserSummary[]> {
-    const users = await this.users.find({ order: { team: 'ASC', name: 'ASC' } });
+    const users = await this.users.find({ where: { active: true }, order: { team: 'ASC', name: 'ASC' } });
     return users.map(({ id, name, team, role }) => ({ id, name, team, role }));
   }
 }

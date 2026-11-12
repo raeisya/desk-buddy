@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { api } from '../api/client'
 import type { FloorResponse, PresenceStatus, UserSummary } from '../api/contracts'
+import { frameStyle, variantFor } from '../theme/characters'
+import { PageHeader } from '../theme/Chrome'
+import { floorDay } from '../theme/format'
 import './screens.css'
 
 const STATUSES: { id: PresenceStatus; label: string }[] = [
@@ -15,23 +18,52 @@ interface Props {
   floor: FloorResponse
   persona: UserSummary
   onChanged: () => void
+  /** Jump to the Find seat tab (people without a desk of their own). */
+  onFindSeat?: () => void
 }
 
 /**
- * "Me" tab (C): your desk and today's status, with one-tap fixes.
+ * "Me" tab (C): one card answering "what does DeskBuddy think I'm doing today?", with one-tap fixes.
  * The usual way to update is still a Slack post; this is for when the AI got it wrong.
  * Privacy: only you see your own reason here; colleagues see "Away".
  */
-export function Me({ floor, persona, onChanged }: Props) {
+export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
   const [busy, setBusy] = useState<PresenceStatus | null>(null)
   const [lastSet, setLastSet] = useState<PresenceStatus | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [moving, setMoving] = useState(false)
+  const [moveBusy, setMoveBusy] = useState<string | null>(null)
+  const [moveMsg, setMoveMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
   const own = floor.desks.find((d) => d.owner?.id === persona.id) ?? null
   const sitting = floor.desks.find((d) => d.occupant?.id === persona.id) ?? null
-  // The floor API only says in/out (never the reason), so after a refresh we can show In office or Out.
-  const inOffice = !!sitting || (own !== null && own.state !== 'available')
-  const active = lastSet ?? (inOffice ? 'IN_OFFICE' : null)
+  // The floor API says in/out but never the reason, so after a refresh an absent owner shows as "Away".
+  const ownerOut = own !== null && own.state === 'available' && !sitting
+  const active: PresenceStatus | null = lastSet ?? (sitting || (own && !ownerOut) ? 'IN_OFFICE' : null)
+  const headline = active ? STATUSES.find((s) => s.id === active)!.label : ownerOut ? 'Away' : 'No desk yet'
+  const out = active !== null ? active !== 'IN_OFFICE' : ownerOut
+  const tone = active === 'IN_OFFICE' ? ' me-status--in' : out ? ' me-status--out' : ''
+
+  // Desks you could move your permanent seat to: no owner, your team's zones first.
+  const teamZones = new Set(floor.desks.filter((d) => d.owner?.team === persona.team).map((d) => d.zone))
+  const movable = floor.desks
+    .filter((d) => !d.owner)
+    .sort((a, b) => Number(teamZones.has(b.zone)) - Number(teamZones.has(a.zone)) || a.id.localeCompare(b.id))
+
+  async function move(deskId: string) {
+    setMoveBusy(deskId)
+    setMoveMsg(null)
+    try {
+      const r = await api.moveMyDesk(persona.id, deskId)
+      setMoveMsg({ ok: true, text: `Moved. ${r.to} is your desk now; ${r.from} is free for someone else.` })
+      setMoving(false)
+      onChanged()
+    } catch (e) {
+      setMoveMsg({ ok: false, text: (e as Error).message })
+    } finally {
+      setMoveBusy(null)
+    }
+  }
 
   async function set(status: PresenceStatus) {
     setBusy(status)
@@ -39,13 +71,7 @@ export function Me({ floor, persona, onChanged }: Props) {
     try {
       await api.setPresence(persona.id, status)
       setLastSet(status)
-      setMessage(
-        status === 'IN_OFFICE'
-          ? 'Saved. Your desk shows as taken.'
-          : own
-            ? `Saved. ${own.id} is free for others today; colleagues just see "Away".`
-            : 'Saved.',
-      )
+      setMessage('Saved. The map has been updated.')
       onChanged()
     } catch (e) {
       setMessage((e as Error).message)
@@ -56,55 +82,110 @@ export function Me({ floor, persona, onChanged }: Props) {
 
   return (
     <section className="tab-screen">
-      <h1 className="screen-title">Today you're</h1>
+      <PageHeader title="Today you're" meta={floorDay(floor)} />
 
-      <div className="db-panel">
-        <div className="db-panel__head">
-          <h2 className="db-panel__title">{active ? STATUSES.find((s) => s.id === active)?.label : inOffice ? 'In office' : 'Out'}</h2>
-          {own && <span className={`db-chip ${inOffice ? 'db-chip--soft' : 'db-chip--ok'}`}>{inOffice ? `${own.id} in use` : `${own.id} free for others`}</span>}
-        </div>
-        <div className="db-panel__body screen-stack">
-          {own ? (
-            <p className="screen-lead">
-              Your desk is <strong>{own.id}</strong> in {own.zone}.
+      <div className="db-panel me-card">
+        <div className="me-id">
+          <span className="me-sprite" style={frameStyle(variantFor(persona.id), 'down', 0)} aria-hidden="true" />
+          <div className="me-id__text">
+            <span className="db-label">
+              {persona.name} · {persona.team}
+            </span>
+            <p className={`me-status${tone}`} aria-live="polite">
+              {headline}
             </p>
-          ) : (
-            <p className="screen-lead">
-              {sitting ? (
+            <p className="me-desk">
+              {own ? (
+                out ? (
+                  <>
+                    <strong>{own.id}</strong> is free for others today. Colleagues just see "Away".
+                  </>
+                ) : (
+                  <>
+                    Your desk <strong>{own.id}</strong> ({own.zone}) shows as yours today.
+                  </>
+                )
+              ) : sitting ? (
                 <>
                   You're at <strong>{sitting.id}</strong> today ({sitting.zone}).
                 </>
               ) : (
-                'No desk of your own yet. Use Find seat to take a free one near your team.'
+                <>No desk of your own yet. Take a free one near your team.</>
               )}
+            </p>
+            {!own && !sitting && onFindSeat && (
+              <button type="button" className="db-btn me-find" onClick={onFindSeat}>
+                Find seat ▶
+              </button>
+            )}
+          </div>
+        </div>
+
+        {own && (
+          <div className="me-move">
+            <div className="me-move__head">
+              <h2 className="db-label">Permanent desk: {own.id}</h2>
+              <button type="button" className="db-btn db-btn--secondary me-move__toggle" aria-expanded={moving} onClick={() => setMoving((m) => !m)}>
+                {moving ? 'Cancel' : 'Change desk'}
+              </button>
+            </div>
+            {moving &&
+              (movable.length === 0 ? (
+                <p className="muted">Every desk has an owner right now. Ask your HOD.</p>
+              ) : (
+                <ul className="me-move__list">
+                  {movable.map((d) => (
+                    <li key={d.id}>
+                      <span>
+                        <strong>{d.id}</strong> · {d.zone}
+                        {teamZones.has(d.zone) && <span className="me-move__near">near your team</span>}
+                      </span>
+                      <button type="button" className="db-btn me-move__btn" disabled={moveBusy !== null} onClick={() => move(d.id)}>
+                        {moveBusy === d.id ? 'Moving…' : 'Move here'}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ))}
+            {moveMsg && (
+              <p className={moveMsg.ok ? 'me-msg' : 'error'} role="status">
+                {moveMsg.text}
+              </p>
+            )}
+          </div>
+        )}
+
+        <div className="me-fix">
+          <h2 className="db-label">Not right? Tap to fix</h2>
+          <div className="me-seg" role="group" aria-label="Today's status">
+            {STATUSES.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                className={`me-seg__btn${active === s.id ? ' on' : ''}`}
+                aria-pressed={active === s.id}
+                disabled={busy !== null}
+                onClick={() => set(s.id)}
+              >
+                {busy === s.id ? 'Saving…' : s.label}
+              </button>
+            ))}
+          </div>
+          {message && (
+            <p className="me-msg" role="status">
+              {message}
             </p>
           )}
         </div>
-      </div>
 
-      <div className="screen-stack">
-        <h3 className="screen-subtitle">Not right? Tap to fix</h3>
-        <div className="status-chips">
-          {STATUSES.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              className={`status-chip${active === s.id ? ' on' : ''}`}
-              aria-pressed={active === s.id}
-              disabled={busy !== null}
-              onClick={() => set(s.id)}
-            >
-              {busy === s.id ? 'Saving…' : s.label}
-              {active === s.id && busy === null ? ' ✓' : ''}
-            </button>
-          ))}
-        </div>
-        {message && (
-          <p className="muted" role="status">
-            {message}
-          </p>
-        )}
-        <p className="muted">Easier still: just post in your team's Slack channel. DeskBuddy reads it.</p>
+        <p className="me-slack">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <path d="M2 3h14v9H7l-4 3v-3H2z" />
+          </svg>
+          <span>
+            Easier still: post in your team's Slack channel, e.g. <q>WFH today</q>. DeskBuddy reads it.
+          </span>
+        </p>
       </div>
     </section>
   )
