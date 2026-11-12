@@ -64,7 +64,7 @@
 .hod-assign li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 260px) auto; align-items: center; gap: 10px 14px; padding: 10px 0; border-bottom: 1px solid var(--rl-line-soft); }
 .hod-assign li:first-child { padding-top: 0; }
 .hod-assign__name { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 17px; font-weight: 600; }
-.hod-assign select { min-height: 42px; padding: 0 10px; font: inherit; font-size: 16px; color: var(--rl-ink); background: var(--rl-card); border: 2px solid var(--rl-line-soft); border-radius: 0; }
+.hod-assign select { min-height: 42px; padding: 0 10px; font: inherit; font-size: 16px; color: var(--rl-ink); background-color: var(--rl-card); border: 2px solid var(--rl-line-soft); border-radius: 0; }
 .hod-assign select:focus { border-color: var(--rl-red); outline: none; }
 .hod-assign__btn { min-height: 42px; padding: 0 18px; font-size: 16px; }
 .hod-assign__ok { margin: 12px 0 0; color: var(--rl-ok-ink); font-weight: 600; }
