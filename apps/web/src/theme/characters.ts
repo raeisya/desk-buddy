@@ -20,8 +20,24 @@ export const CHARACTER_SHEET = {
 export type Direction = (typeof CHARACTER_SHEET.directions)[number]
 export type Animation = keyof typeof CHARACTER_SHEET.frames
 
+/**
+ * Fixed looks for the demo personas, so the people on stage are recognisable and distinct
+ * (the hash alone gave Alia, Aina and Shane the same sprite).
+ * Variants: 0 short black/blue · 1 hijab maroon · 2 short black/green · 3 long black/mustard ·
+ *           4 short brown/grey · 5 hijab teal · 6 short black/red · 7 long brown/orange
+ * Alia, Shane and Raeisya are real people: each picks their own; these are placeholders.
+ */
+const PERSONA_VARIANTS: Record<string, number> = {
+  'u-alia': 5,
+  'u-shane': 4,
+  'u-raeisya': 0,
+  'u-hafiz': 6,
+  'u-aina': 1,
+}
+
 /** Stable sprite variant per person (same user → same look on every render). */
 export function variantFor(userId: string): number {
+  if (userId in PERSONA_VARIANTS) return PERSONA_VARIANTS[userId]
   let h = 0
   for (let i = 0; i < userId.length; i++) h = (h * 31 + userId.charCodeAt(i)) | 0
   return Math.abs(h) % CHARACTER_SHEET.variants

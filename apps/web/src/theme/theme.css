@@ -1,0 +1,242 @@
+/*
+ * Redline theme (C). Red ink on drawing paper: the markup layer of an engineering drawing.
+ * Loaded after index.css + office.css, so it re-skins B's components without touching their files.
+ *
+ * Type rules: the pixel font (Silkscreen) only at 18px+, for the logo and panel titles.
+ * Buttons and anything people read: IBM Plex Sans; labels: IBM Plex Mono. Nothing below 13px.
+ * Red = action + structure. Desk states live on the map, never on buttons.
+ */
+
+:root {
+  /* palette */
+  --rl-paper: #faf6f2;
+  --rl-card: #ffffff;
+  --rl-red: #c8322b;
+  --rl-red-dark: #8f1d17;
+  --rl-red-tint: #f3d6d3;
+  --rl-line-soft: #e2b4ae;
+  --rl-ink: #1f1a1a;
+  --rl-ink-2: #4a3f3d;
+  --rl-muted: #6b5e5c;
+  --rl-on-red: #ffffff;
+  --rl-on-red-muted: #ffe3df;
+  --rl-ok: #1e7b3a;
+  --rl-ok-tint: #c9f0d3;
+  --rl-ok-ink: #14532d;
+
+  /* type */
+  --font-display: 'Silkscreen', ui-monospace, monospace;
+  --font-button: var(--font-body); /* not Pixelify: its C reads as O at button size */
+  --font-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-label: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+
+  /* B's shared tokens, remapped */
+  --bg: var(--rl-paper);
+  --fg: var(--rl-ink);
+  --muted: var(--rl-muted);
+  --card: var(--rl-card);
+  --border: var(--rl-line-soft);
+  --error: #b3261e;
+  --desk-away: #f08a3c; /* orange, not amber: never confused with an action colour */
+
+  font-family: var(--font-body);
+  font-size: 16px;
+  color-scheme: light;
+}
+
+body {
+  background-color: var(--rl-paper);
+  /* drawing-paper grid: 80px major, 16px minor */
+  background-image:
+    linear-gradient(rgba(200, 50, 43, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(200, 50, 43, 0.09) 1px, transparent 1px),
+    linear-gradient(rgba(200, 50, 43, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(200, 50, 43, 0.04) 1px, transparent 1px);
+  background-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px;
+  color: var(--rl-ink);
+  font-family: var(--font-body);
+  line-height: 1.45;
+}
+
+:focus-visible { outline: 3px solid var(--rl-ink); outline-offset: 2px; }
+
+.app { max-width: 1600px; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+
+/* ── Title block (header) ──────────────────────────────────────────────── */
+.tb {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  background: var(--rl-card);
+  border: 2px solid var(--rl-red);
+  box-shadow: 4px 4px 0 var(--rl-ink);
+}
+.tb-brand { display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 12px 22px; background: var(--rl-red); color: var(--rl-on-red); }
+.tb-logo { font-family: var(--font-display); font-size: 30px; line-height: 1; text-transform: uppercase; }
+.tb-tagline { font-size: 15px; color: var(--rl-on-red-muted); }
+.tb-cells { margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.tb-cells > div { padding: 10px 18px; display: flex; flex-direction: column; justify-content: center; gap: 4px; border-right: 1px solid var(--rl-line-soft); }
+.tb-cells dd { margin: 0; font-size: 18px; font-weight: 600; white-space: nowrap; }
+.tb-who { display: flex; align-items: center; gap: 14px; padding: 8px 20px; }
+.tb-sprite { width: 32px; height: 48px; flex-shrink: 0; }
+.tb-live { padding: 5px 10px; font-family: var(--font-label); font-size: 14px; font-weight: 600; color: var(--rl-muted); border: 2px solid currentColor; white-space: nowrap; }
+.tb-live.on { color: var(--rl-ok); }
+
+/* persona switcher, inside the title block */
+.persona-switcher { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.persona-switcher .muted { font-family: var(--font-label); font-size: 13px; text-transform: uppercase; color: var(--rl-muted); }
+.persona-switcher select {
+  height: 38px;
+  min-width: 200px;
+  padding: 0 8px;
+  font-family: var(--font-body);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--rl-ink);
+  background: var(--rl-card);
+  border: 2px solid var(--rl-ink);
+  border-radius: 0;
+}
+
+.tb-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  padding-top: 10px;
+  border-top: 2px solid var(--rl-red);
+  font-family: var(--font-label);
+  font-size: 13px;
+  text-transform: uppercase;
+  color: var(--rl-muted);
+}
+
+/* ── Workspace: framed map + side panel ────────────────────────────────── */
+/* header + map band + legend + footer ≈ 300px of chrome; keep the map within one screen */
+.map-wrap { max-width: min(1280px, calc((100dvh - 300px) * 5 / 3)); }
+.workspace { gap: 16px; }
+.workspace .desk-panel,
+.workspace .panel-hint { flex: 0 0 340px; }
+.mapframe .db-panel__hint strong { color: var(--rl-on-red); }
+.mapframe-body { padding: 8px; }
+.mapframe-legend { padding: 0 12px 12px; }
+.mapframe-legend .legend { margin: 0; }
+.panel-hint .db-panel__body p { margin: 0 0 8px; font-size: 17px; }
+.panel-hint .db-panel__body p.muted { font-size: 15px; }
+
+/* ── Legend ────────────────────────────────────────────────────────────── */
+.legend { gap: 10px 24px; font-size: 15px; margin-bottom: 14px; }
+.legend li { gap: 8px; }
+.swatch { width: 18px; height: 18px; border-radius: 0; border: 2px solid var(--rl-ink); }
+
+/* ── Map ───────────────────────────────────────────────────────────────── */
+.pixel-office { border: 0; }
+.px-desk.selected { outline: 3px solid var(--rl-red); outline-offset: -3px; }
+
+/* ── Desk panel = red-banded drawing panel ─────────────────────────────── */
+.desk-panel {
+  padding: 0;
+  font-family: var(--font-body);
+  background: var(--rl-card);
+  border: 2px solid var(--rl-red);
+  box-shadow: 4px 4px 0 var(--rl-ink);
+}
+.desk-panel header { padding: 10px 14px; background: var(--rl-red); color: var(--rl-on-red); }
+.desk-panel h2 { font-family: var(--font-display); font-weight: 400; font-size: 22px; }
+.desk-panel h2::before { content: 'Desk '; }
+.desk-panel header button {
+  width: 36px;
+  height: 36px;
+  font-family: var(--font-body);
+  font-size: 20px;
+  color: var(--rl-on-red);
+  border: 2px solid var(--rl-on-red);
+  background: transparent;
+}
+.desk-panel dl { margin: 0; padding: 6px 14px 14px; }
+.desk-panel dt { margin-top: 12px; font-family: var(--font-label); font-size: 13px; text-transform: uppercase; color: var(--rl-muted); }
+.desk-panel dd { font-size: 17px; }
+
+/* B's Take / Leave buttons, drawn as Redline buttons */
+.desk-actions { margin: 0; padding: 0 14px 14px; gap: 10px; }
+.desk-actions p { font-size: 15px; }
+.px-button {
+  min-height: 48px;
+  padding: 0 16px;
+  font-family: var(--font-button);
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--rl-red);
+  background: var(--rl-card);
+  border: 2px solid var(--rl-red);
+  box-shadow: none;
+  cursor: pointer;
+}
+.px-button:hover:not(:disabled) { background: var(--rl-red-tint); }
+.px-button.primary { color: var(--rl-on-red); background: var(--rl-red); border-color: var(--rl-ink); box-shadow: 3px 3px 0 var(--rl-ink); }
+.px-button.primary:hover:not(:disabled) { background: var(--rl-red-dark); }
+.px-button:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: none; }
+
+/* ── Phone width: stack everything ─────────────────────────────────────── */
+@media (max-width: 760px) {
+  .app { padding: 12px; }
+  .tb { grid-template-columns: minmax(0, 1fr); }
+  .tb-cells { grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--rl-line-soft); }
+  .tb-cells > div { padding: 8px 10px; }
+  .tb-cells dd { font-size: 15px; white-space: normal; }
+  .tb-who { border-top: 1px solid var(--rl-line-soft); padding: 8px 12px; }
+  .tb-live { margin-left: auto; }
+  .map-wrap { max-width: none; }
+  .workspace .desk-panel,
+  .workspace .panel-hint { flex-basis: auto; }
+}
+
+/* ── Building blocks for new screens (login, HOD dashboard) ────────────── */
+.db-panel { background: var(--rl-card); border: 2px solid var(--rl-red); box-shadow: 4px 4px 0 var(--rl-ink); }
+.db-panel__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 12px 16px;
+  background: var(--rl-red);
+  color: var(--rl-on-red);
+}
+.db-panel__title { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 22px; text-transform: uppercase; }
+.db-panel__hint { font-size: 15px; color: var(--rl-on-red-muted); }
+.db-panel__body { padding: 16px; }
+
+.db-label { font-family: var(--font-label); font-size: 13px; text-transform: uppercase; letter-spacing: 0.02em; color: var(--rl-muted); }
+
+.db-btn {
+  min-height: 48px;
+  padding: 0 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: var(--font-button);
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--rl-on-red);
+  background: var(--rl-red);
+  border: 2px solid var(--rl-ink);
+  border-radius: 0;
+  box-shadow: 3px 3px 0 var(--rl-ink);
+  cursor: pointer;
+  transition: transform 0.1s steps(2), box-shadow 0.1s steps(2);
+}
+.db-btn:hover { background: var(--rl-red-dark); }
+.db-btn:active { transform: translate(3px, 3px); box-shadow: none; }
+.db-btn--secondary { color: var(--rl-red); background: var(--rl-card); border-color: var(--rl-red); box-shadow: none; }
+.db-btn--secondary:hover { background: var(--rl-red-tint); }
+.db-btn--plain { color: var(--rl-ink); background: var(--rl-card); }
+.db-btn--plain:hover { background: var(--rl-paper); }
+.db-btn:disabled { color: var(--rl-muted); background: transparent; border: 2px dashed var(--rl-line-soft); box-shadow: none; cursor: not-allowed; }
+
+.db-chip { display: inline-block; padding: 3px 10px; font-family: var(--font-label); font-size: 14px; font-weight: 600; }
+.db-chip--red { color: var(--rl-on-red); background: var(--rl-red); }
+.db-chip--soft { color: var(--rl-ink); background: var(--rl-red-tint); }
+.db-chip--ok { color: var(--rl-ok-ink); background: var(--rl-ok-tint); }
+
+@media (prefers-reduced-motion: reduce) { .db-btn { transition: none; } }
