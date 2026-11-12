@@ -196,7 +196,14 @@ One Docker container (NestJS serves the API, SSE and the built React app) + Rail
 - If C is behind at 21:00 → cut the HOD dashboard to today's counts + heatmap; B takes the heatmap UI. Never cut the demo script or rehearsals.
 - B has spare time after 21:00 → take whatever is behind first; animation and the bot sprite only after that.
 
-**Git:** everyone pushes to `main`. `git pull --rebase` before every push. Never push broken code: `main` auto-deploys. Semantic commit messages (`feat:`, `fix:`, `docs:`, `chore:`).
+**Git: pull requests into `main`, no direct pushes.**
+- Branch off the latest `main`: `feature/…`, `fix/…`, `chore/…` (e.g. `feature/person-c-map-theme`).
+- Open a PR into `main`. **Keep PRs small and merge often.** A branch that lives for hours will hit conflicts in `contracts.ts` / `app.module.ts`.
+- **Review within ~10 min.** If nobody has reviewed after that and you're blocked, merge it yourself and say so in the team chat. Hand-offs (e.g. C's map to B by 15:00) can't wait on a review queue.
+- **Every merge is a deploy** (`main` auto-deploys). Check it builds (`npm run build`) before merging. Never merge broken code.
+- `git pull --rebase origin main` before opening a PR if `main` has moved.
+- **No merges after 9:00 AM Friday.** A merge counts as a commit + deploy = disqualification.
+- Semantic commit messages (`feat:`, `fix:`, `docs:`, `chore:`).
 
 ## Proposals
 - **P1. Slack sign-in: decided.** Show-only button on the login page; real OAuth is roadmap.
