@@ -10,7 +10,8 @@
     "db:down": "docker compose down",
     "dev": "concurrently -n api,web -c blue,green \"npm run dev -w apps/api\" \"npm run dev -w apps/web\"",
     "build": "npm run build -w apps/web && npm run build -w apps/api",
-    "start": "npm run start -w apps/api"
+    "start": "npm run start -w apps/api",
+    "smoke": "node scripts/smoke-bookings.mjs"
   },
   "devDependencies": {
     "concurrently": "^10.0.7"
