@@ -15,5 +15,7 @@ export function shortName(fullName: string): string {
   const parts = fullName.trim().split(/\s+/)
   if (parts.length === 3 && SURNAME_FIRST.has(parts[0])) return `${parts[1]} ${parts[2]}`
   if (parts.length >= 2 && MALAY_PREFIX.has(parts[0])) return parts[1]
+  // Two short syllables is a Chinese given name on its own ("Ming Wei", "Wei Ching"): keep both.
+  if (parts.length === 2 && parts[0].length <= 4 && parts[1].length <= 5) return fullName.trim()
   return parts[0] ?? fullName
 }
