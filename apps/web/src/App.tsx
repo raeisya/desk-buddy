@@ -8,6 +8,7 @@ import { isFree, suggestSeat } from './components/seating'
 import { planKopiRun } from './components/kopi'
 import { presenceWalks, walkDuration } from './components/walking'
 import { useFloor } from './hooks/useFloor'
+import { useLang } from './i18n/lang'
 import { useAmbientWalks } from './hooks/useAmbientWalks'
 import { useWalkers } from './hooks/useWalkers'
 import { FindSeat } from './pages/FindSeat'
@@ -44,6 +45,7 @@ export default function App() {
   // before the children render, so map, header, login and Me all see the same latest looks. It's a
   // no-op unless the users list or the floor object changed (so not on every animation frame).
   registerPeople(users, floor)
+  const { lang, t } = useLang()
   useAmbientWalks(floor, users, walkingIds, startWalks) // John strolls, Chi Keen mingles
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null)
@@ -64,7 +66,7 @@ export default function App() {
 
   function findSeat() {
     if (!floor || !persona) return
-    const result = suggestSeat(floor.desks, persona)
+    const result = suggestSeat(floor.desks, persona, lang)
     const suggestedId = result.ok ? result.desk.id : null
     // Open the panel on the suggestion, or on the desk you're already at.
     const focusId = suggestedId ?? (result.ok ? null : (result.deskId ?? null))
@@ -121,7 +123,7 @@ export default function App() {
   const findSeatBar = floor && (
     <div className="find-seat">
       <button type="button" className="px-button primary" onClick={findSeat}>
-        Find me a seat near {persona.team}
+        {t('findSeatNear', { team: persona.team })}
       </button>
       {activeSuggestion && <p aria-live="polite">{activeSuggestion.note}</p>}
     </div>
