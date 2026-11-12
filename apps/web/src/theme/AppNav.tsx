@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react'
 
-export type AppTab = 'map' | 'seat' | 'me'
+export type AppTab = 'map' | 'seat' | 'me' | 'team'
 
 const TABS: { id: AppTab; label: string; icon: ReactElement }[] = [
   {
@@ -33,24 +33,36 @@ const TABS: { id: AppTab; label: string; icon: ReactElement }[] = [
       </svg>
     ),
   },
+  {
+    id: 'team',
+    label: 'Team',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+        <path d="M3 19V11M8 19V5M13 19V9M18 19V13" />
+      </svg>
+    ),
+  },
 ]
 
 /**
- * Main navigation (C): Map · Find seat · Me.
+ * Main navigation (C): Map · Find seat · Me, plus Team for HODs.
  * Phone: fixed bar at the bottom (thumb reach). Desktop: sidebar left of the content.
  */
 export function AppNav({
   tab,
   onTab,
   placement,
+  showTeam = false,
 }: {
   tab: AppTab
   onTab: (tab: AppTab) => void
   placement: 'side' | 'bottom'
+  /** HODs only: the team dashboard. */
+  showTeam?: boolean
 }) {
   return (
     <nav className={`app-nav app-nav--${placement}`} aria-label="Main">
-      {TABS.map((t) => (
+      {TABS.filter((t) => showTeam || t.id !== 'team').map((t) => (
         <button key={t.id} type="button" aria-current={t.id === tab ? 'page' : undefined} onClick={() => onTab(t.id)}>
           {t.icon}
           {t.label}
