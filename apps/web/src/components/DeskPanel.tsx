@@ -6,7 +6,6 @@ import { DESK_STATE_STYLE } from './deskStyles'
 interface Props {
   desk: FloorDesk
   persona: UserSummary | null
-  releaseCutoff: string
   onClose: () => void
 }
 
@@ -16,13 +15,11 @@ type Action = 'take' | 'leave' | null
 function actionFor(desk: FloorDesk, persona: UserSummary | null): Action {
   if (!persona) return null
   if (desk.occupant?.id === persona.id) return 'leave'
-  const free = desk.state === 'available' || desk.state === 'unassigned'
-  const ownDeskNotYetIn = desk.owner?.id === persona.id && desk.state === 'away'
-  return free || ownDeskNotYetIn ? 'take' : null
+  return desk.state === 'available' || desk.state === 'unassigned' ? 'take' : null
 }
 
 /** Privacy: never shows why an owner is away (MC etc.) — the API doesn't send it either. */
-export function DeskPanel({ desk, persona, releaseCutoff, onClose }: Props) {
+export function DeskPanel({ desk, persona, onClose }: Props) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const action = actionFor(desk, persona)
@@ -71,9 +68,6 @@ export function DeskPanel({ desk, persona, releaseCutoff, onClose }: Props) {
           </button>
         )}
         {!persona && <p className="muted">Pick who you are to take a desk.</p>}
-        {persona && !action && desk.state === 'away' && (
-          <p className="muted">Owner not in yet. Frees at {releaseCutoff} if they don't show.</p>
-        )}
         {error && <p className="error" role="alert">{error}</p>}
       </div>
     </aside>

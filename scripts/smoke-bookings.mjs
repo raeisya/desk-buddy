@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Smoke test for "take a desk" (bookings). Run against your LOCAL stack: `npm run smoke`.
-// It creates and releases real bookings and briefly moves the demo clock, so it refuses
+// It creates and releases real bookings, so it refuses
 // to run against anything but localhost unless SMOKE_ALLOW_REMOTE=1.
 //
 // NOTE: once login is cookie-based and the bookings API stops reading `userId` from the body,
@@ -97,31 +97,14 @@ try {
   }
   check('race ×10: exactly one winner every round', badRounds === 0, `${badRounds} bad round(s)`)
 
-  // 8. owner-not-in-yet rule (needs the demo clock; skipped if someone is already using it)
-  const clock = (await call('GET', '/clock')).data
-  if (clock.isDemoTime) {
-    console.log('⏭️  skipped "owner not in yet" checks: demo clock is in use')
+  // 8. an owner who's in (silent or IN_OFFICE, no booking) keeps their desk: nobody else can take it
+  const ownersDesk = (await floor()).find((d) => d.state === 'occupied' && d.owner && !d.occupant)
+  if (!ownersDesk) {
+    console.log('⏭️  skipped "owner is in" check: no owner-occupied desk right now')
   } else {
-    const nineAm = `${clock.today}T01:00:00.000Z` // 09:00 Asia/Kuala_Lumpur
-    await call('PUT', '/clock', { now: nineAm })
-    try {
-      const away = (await floor()).find((d) => d.state === 'away')
-      if (!away) {
-        console.log('⏭️  skipped "owner not in yet" checks: no desk is in the away state at 09:00')
-      } else {
-        r = await as(u1).take(away.id)
-        if (r.status === 201) made.push([u1, away.id])
-        check(`non-owner refused before cutoff (${away.id})`, r.status === 409, show(r))
-        r = await as(away.owner.id).take(away.id)
-        if (r.status === 201) made.push([away.owner.id, away.id])
-        check('owner can check in to their own desk', r.status === 201, show(r))
-        check('owner check-in shows occupied', (await stateOf(away.id)) === 'occupied')
-      }
-    } finally {
-      await cleanup()
-      made.length = 0
-      await call('DELETE', '/clock')
-    }
+    r = await as(u1).take(ownersDesk.id)
+    if (r.status === 201) made.push([u1, ownersDesk.id])
+    check(`can't take a desk whose owner is in (${ownersDesk.id})`, r.status === 409, show(r))
   }
 } catch (e) {
   failed++

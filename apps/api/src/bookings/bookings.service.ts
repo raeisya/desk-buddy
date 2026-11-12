@@ -41,10 +41,9 @@ export class BookingsService {
     const desk = desks.find((d) => d.id === deskId);
     if (!desk) throw new NotFoundException(`No desk ${deskId}`);
 
-    const isOwner = desk.owner?.id === userId;
-    const free = desk.state === 'available' || desk.state === 'unassigned';
-    // The owner may always sit at their own desk (that's checking in), unless they already are.
-    if (!free && !(isOwner && desk.state !== 'occupied')) {
+    // Only free desks can be taken. An owner who said they're out but came in anyway sees their own
+    // desk as free and simply takes it back (it shows as occupied, since owner === booker).
+    if (desk.state !== 'available' && desk.state !== 'unassigned') {
       throw new ConflictException(this.whyNot(desk.state));
     }
 
@@ -77,8 +76,6 @@ export class BookingsService {
 
   private whyNot(state: string): string {
     switch (state) {
-      case 'away':
-        return `The owner hasn't checked in yet. The desk frees up at ${this.clock.releaseCutoff} if they don't show.`;
       case 'occupied':
       case 'hot-seated':
         return 'Someone is already sitting there.';

@@ -26,7 +26,6 @@ export class FloorService {
 
     const statusByUser = new Map(presence.map((p) => [p.userId, p.status]));
     const bookingByDesk = new Map(bookings.map((b) => [b.deskId, b]));
-    const pastCutoff = this.clock.isPastCutoff(date);
 
     return {
       date,
@@ -46,7 +45,6 @@ export class FloorService {
             ownerId: d.ownerId,
             ownerStatus: d.ownerId ? statusByUser.get(d.ownerId) ?? null : null,
             bookedBy: booking?.userId ?? null,
-            pastCutoff,
           }),
           owner: toRef(d.owner),
           occupant: toRef(booking?.user),

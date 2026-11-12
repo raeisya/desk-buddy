@@ -10,10 +10,10 @@ export type PresenceSource = (typeof PRESENCE_SOURCES)[number];
 export const ROLES = ['staff', 'hod', 'admin'] as const;
 export type Role = (typeof ROLES)[number];
 
-// occupied   – owner is in (posted IN_OFFICE or checked in to their own desk)
-// available  – owner is out (WFH/MC/LEAVE/OUTSTATION) or no-show after the release cutoff; free to claim
+// occupied   – owner is in: silent (no post = in the office), posted IN_OFFICE, or checked in to their own desk
+// available  – owner said they're out (WFH/MC/LEAVE/OUTSTATION); free to claim
 // hot-seated – someone other than the owner has an active booking today
-// away       – owner hasn't said anything yet and it's before the release cutoff (not claimable yet)
+// away       – NOT USED since 12 Nov (silent owners count as in the office; no auto-release). Kept so nothing breaks.
 // unassigned – no owner and no booking; free to claim
 export const DESK_STATES = ['occupied', 'available', 'hot-seated', 'away', 'unassigned'] as const;
 export type DeskState = (typeof DESK_STATES)[number];
