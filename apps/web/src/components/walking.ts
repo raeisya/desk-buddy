@@ -165,13 +165,25 @@ function segmentIndex(route: Point[], s: number): number {
   return Math.max(0, route.length - 2)
 }
 
+/** From an aisle/corridor point: along it to the nearest gap between pods, then down/up the gap to the hub. */
+const aisleToHub = (q: Point): Point[] => {
+  const gap = nearestGap(q.x)
+  return [{ x: gap, y: q.y }, { x: gap, y: HUB_Y }]
+}
+
 /** From distance s on a route, the waypoints that get you onto the hub row (empty if already on it). */
 function toHub(route: Point[], s: number): Point[] {
   const here = pointAlong(route, s).p
   if (onHub(here)) return []
   const i = segmentIndex(route, s)
   const lastHub = route.reduce((k, p, j) => (onHub(p) ? j : k), -1)
-  if (lastHub < 0) return [] // no hub on this route (shouldn't happen)
+  if (lastHub < 0) {
+    // A desk-to-desk shortcut (seat → aisle → aisle → seat, no hub point). Step out of the chair onto
+    // the aisle if we're in one, then take the nearest gap down to the hub. Never cut through a pod.
+    const last = route.length - 2
+    const q = i === 0 ? route[1] : i === last ? route[last] : here
+    return [...(i === 0 || i === last ? [q] : []), ...aisleToHub(q)]
+  }
   if (i >= lastHub) return route.slice(lastHub, i + 1).reverse() // seat side: go back towards the hub
   const firstAhead = route.findIndex((p, j) => j > i && onHub(p))
   return route.slice(i + 1, firstAhead + 1) // door side: go forward onto the hub
@@ -182,7 +194,12 @@ function fromHub(next: Walk): Point[] {
   const r = next.route
   if (next.to >= next.from) {
     const lastHub = r.reduce((k, p, j) => (onHub(p) ? j : k), -1)
-    return r.slice(Math.max(0, lastHub))
+    if (lastHub >= 0) return r.slice(lastHub)
+    // Desk-to-desk shortcut: reach the new seat from the hub via the gap nearest its aisle.
+    const seat = r[r.length - 1]
+    const aisle = r[r.length - 2]
+    const gap = nearestGap(seat.x)
+    return [{ x: gap, y: HUB_Y }, { x: gap, y: aisle.y }, aisle, seat]
   }
   const firstHub = r.findIndex(onHub)
   return r.slice(0, firstHub + 1).reverse()

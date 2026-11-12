@@ -28,7 +28,14 @@ export function useFloor(onChange?: (prev: FloorResponse, next: FloorResponse) =
       const next = await api.getFloor()
       if (seq < appliedRef.current) return // a newer floor is already on screen
       appliedRef.current = seq
-      if (prevRef.current) onChangeRef.current?.(prevRef.current, next)
+      if (prevRef.current) {
+        // Animation must never break the map: a bug in onChange is logged, the floor still updates.
+        try {
+          onChangeRef.current?.(prevRef.current, next)
+        } catch (err) {
+          console.error('[DeskBuddy] floor onChange failed', err)
+        }
+      }
       prevRef.current = next
       setFloor(next)
       setError(null)
