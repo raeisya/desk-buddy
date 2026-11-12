@@ -6,6 +6,8 @@ import { DESK_STATE_STYLE } from './deskStyles'
 interface Props {
   desk: FloorDesk
   persona: UserSummary | null
+  /** Why this desk was suggested ("Find me a seat"), shown above the button. */
+  note?: string
   onClose: () => void
   /** Refetch the floor. The live stream usually does this, but it may be down (venue Wi-Fi). */
   onChanged: () => void
@@ -21,7 +23,7 @@ function actionFor(desk: FloorDesk, persona: UserSummary | null): Action {
 }
 
 /** Privacy: never shows why an owner is away (MC etc.) — the API doesn't send it either. */
-export function DeskPanel({ desk, persona, onClose, onChanged }: Props) {
+export function DeskPanel({ desk, persona, note, onClose, onChanged }: Props) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const action = actionFor(desk, persona)
@@ -61,6 +63,7 @@ export function DeskPanel({ desk, persona, onClose, onChanged }: Props) {
       </dl>
 
       <div className="desk-actions">
+        {note && action === 'take' && <p className="suggest-note">★ {note}</p>}
         {action === 'take' && (
           <button type="button" className="px-button primary" onClick={run} disabled={busy}>
             {busy ? 'Taking…' : 'Take this desk'}
