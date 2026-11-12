@@ -143,7 +143,7 @@ export default function App() {
           }}
         />
       )}
-      {tab === 'me' && floor && <Me floor={floor} persona={persona} onChanged={() => void reload()} />}
+      {tab === 'me' && floor && <Me floor={floor} persona={persona} onChanged={() => void reload()} onFindSeat={() => setTab('seat')} />}
       {tab === 'team' && isHod && floor && <HodDashboard floor={floor} persona={persona} />}
     </>
   )

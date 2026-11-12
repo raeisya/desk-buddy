@@ -11,21 +11,6 @@
 .screen-cta { min-height: 56px; font-size: 20px; }
 .tab-screen .zone-viewport { margin: 0; border: 0; border-bottom: 2px solid var(--rl-red); }
 
-.status-chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.status-chips .status-chip:last-child { grid-column: span 2; }
-.status-chip {
-  min-height: 52px;
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 18px;
-  color: var(--rl-red);
-  background: var(--rl-card);
-  border: 2px solid var(--rl-red);
-  border-radius: 0;
-  cursor: pointer;
-}
-.status-chip.on { color: var(--rl-on-red); background: var(--rl-red); border-color: var(--rl-ink); box-shadow: 3px 3px 0 var(--rl-ink); }
-.status-chip:disabled { cursor: progress; opacity: 0.7; }
 
 /* Desktop: a readable column under the tab strip, not stretched across 1600px */
 @media (min-width: 761px) {
@@ -33,7 +18,56 @@
   /* Find seat: zone map left, desk details right */
   .seat-card { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-items: stretch; }
   .seat-card .zone-viewport { align-self: start; border-bottom: 0; border-right: 2px solid var(--rl-red); }
-  .status-chips { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-  .status-chips .status-chip:last-child { grid-column: auto; }
   .screen-cta { justify-self: start; }
+}
+
+/* ── Me: one status card ──────────────────────────────────────────────── */
+.me-id { display: flex; gap: 20px; align-items: center; padding: 20px; }
+.me-sprite { width: 64px; height: 96px; flex-shrink: 0; }
+.me-id__text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.me-status { margin: 0; font-family: var(--font-display); font-size: 40px; line-height: 1.05; text-transform: uppercase; color: var(--rl-ink); }
+.me-status--in { color: var(--rl-ok); }
+.me-status--out { color: var(--rl-red); }
+.me-desk { margin: 0; font-size: 17px; line-height: 1.4; }
+.me-find { align-self: flex-start; margin-top: 6px; }
+
+.me-fix { display: flex; flex-direction: column; gap: 10px; padding: 16px 20px; border-top: 1px solid var(--rl-line-soft); }
+.me-fix h2 { margin: 0; }
+.me-seg { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border: 2px solid var(--rl-red); }
+.me-seg__btn {
+  min-height: 52px;
+  padding: 0 6px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 17px;
+  color: var(--rl-red);
+  background: var(--rl-card);
+  border: 0;
+  border-left: 2px solid var(--rl-red);
+  border-radius: 0;
+  cursor: pointer;
+}
+.me-seg__btn:first-child { border-left: 0; }
+.me-seg__btn:hover:not(:disabled):not(.on) { background: var(--rl-red-tint); }
+.me-seg__btn.on { color: var(--rl-on-red); background: var(--rl-red); }
+.me-seg__btn:disabled { cursor: progress; }
+.me-msg { margin: 0; font-size: 15px; color: var(--rl-ok-ink); }
+
+.me-slack { display: flex; align-items: flex-start; gap: 10px; margin: 0; padding: 12px 20px; font-size: 15px; color: var(--rl-muted); background: var(--rl-paper); border-top: 1px solid var(--rl-line-soft); }
+.me-slack svg { flex-shrink: 0; margin-top: 2px; color: var(--rl-red); }
+
+@media (max-width: 760px) {
+  .me-id { gap: 14px; padding: 16px; }
+  .me-sprite { width: 48px; height: 72px; }
+  .me-status { font-size: 30px; }
+  .me-desk { font-size: 16px; }
+  .me-fix { padding: 14px 16px; }
+  /* 3 + 2 on a phone: "Outstation" doesn't fit a fifth of 390px */
+  .me-seg { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .me-seg__btn { grid-column: span 2; border-top: 2px solid var(--rl-red); }
+  .me-seg__btn:nth-child(-n + 3) { border-top: 0; }
+  .me-seg__btn:nth-child(4),
+  .me-seg__btn:nth-child(5) { grid-column: span 3; }
+  .me-seg__btn:nth-child(4) { border-left: 0; }
+  .me-slack { padding: 12px 16px; }
 }
