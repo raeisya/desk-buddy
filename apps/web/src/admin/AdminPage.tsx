@@ -97,7 +97,7 @@ export function AdminPage({ floor, persona }: Props) {
     items.push(
       u.deskId
         ? { label: `Remove from ${u.deskId}`, danger: true, onSelect: () => setPending({ kind: 'remove', user: u }) }
-        : { label: 'Remove from desk', hint: 'no desk', disabled: true, onSelect: () => {} },
+        : { label: 'Remove from desk', disabled: true, onSelect: () => {} },
     )
     if (!self && u.active) items.push({ label: 'Deactivate', danger: true, onSelect: () => setPending({ kind: 'deactivate', user: u }) })
     if (!self && !u.active) items.push({ label: 'Reactivate', onSelect: () => void save(u, { active: true }) })
