@@ -81,6 +81,24 @@
 .px-bubble.facing-down { transform: translate(-50%, calc(-100% - 2px)); }
 .px-bubble.facing-up { transform: translate(-50%, 2px); }
 
+/* Name tag for whoever is sitting at a desk. Dark, so it reads differently from the white "Away" bubbles. */
+.px-name {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  max-width: 6cqw; /* ≈ one desk wide; longer names get "…", full name is in the tooltip/panel */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 1px 3px;
+  font: 700 clamp(6px, 0.8cqw, 10px) / 1.1 ui-monospace, 'SF Mono', Menlo, monospace;
+  color: #fff;
+  background: rgba(18, 20, 26, 0.85);
+}
+.px-name.facing-down { transform: translate(-50%, calc(-100% - 1px)); }
+.px-name.facing-up { transform: translate(-50%, 2px); }
+.px-name.is-you { color: #12141a; background: #ffd84a; }
+
 @media (prefers-reduced-motion: reduce) { .px-desk { animation: none !important; } }
 
 .persona-switcher { display: inline-flex; align-items: center; gap: 6px; font-size: 0.9rem; }
