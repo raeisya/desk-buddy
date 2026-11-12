@@ -319,13 +319,24 @@ export function configFromAvatar(a: Avatar): AvatarConfig {
   return { style: a.style, hair: rgbToHex(a.hair), skin: a.skin, shirt: rgbToHex(a.shirt), pants: a.pants }
 }
 
+/**
+ * C's preset look for a person. John's boss suit (variant 8) exists only on the static sheet, not as an
+ * Avatar, so anything that needs an Avatar for him (the picker's starting draft) gets preset 0.
+ */
+export function presetAvatarFor(personId: string): Avatar {
+  return PRESET_AVATARS[variantFor(personId)] ?? PRESET_AVATARS[0]
+}
+
 /** The look for a person: what they saved, else C's preset for their variant. */
 export function avatarFor(personId: string): Avatar {
   const saved = savedLookOf(personId)
-  return saved ? avatarFromConfig(saved) : PRESET_AVATARS[variantFor(personId)]
+  return saved ? avatarFromConfig(saved) : presetAvatarFor(personId)
 }
 
 /** One frame of a person's look. Drop-in for frameStyle(variantFor(id), dir, col). */
 export function personFrameStyle(personId: string, direction: Direction, column: number) {
+  const variant = variantFor(personId)
+  // Sheet-only look (John's suit) until he saves his own.
+  if (variant >= PRESET_AVATARS.length && !savedLookOf(personId)) return frameStyle(variant, direction, column)
   return avatarFrameStyle(avatarFor(personId), direction, column)
 }

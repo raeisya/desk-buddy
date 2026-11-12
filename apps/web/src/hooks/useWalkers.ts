@@ -8,6 +8,8 @@ export interface WalkRequest {
   walk: Walk
   /** Hide this person's seated sprite while walking (they're "away from the desk"). */
   hideSeated: boolean
+  /** Replace a walk in progress as-is (it already starts where they stand) instead of rerouting from there. */
+  takeOver?: boolean
 }
 
 interface ActiveWalk extends WalkRequest {
@@ -68,7 +70,7 @@ export function useWalkers() {
       const current = new Map(ws.map((w) => [w.personId, w]))
       const fresh = requests.map((r) => {
         const old = current.get(r.personId)
-        const walk = old ? redirect(old.walk, t - old.startedAt, r.walk) : r.walk
+        const walk = old && !r.takeOver ? redirect(old.walk, t - old.startedAt, r.walk) : r.walk
         return { ...r, walk, startedAt: t, durationMs: walkDuration(walk) }
       })
       const ids = new Set(requests.map((r) => r.personId))

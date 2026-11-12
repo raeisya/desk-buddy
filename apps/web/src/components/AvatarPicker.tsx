@@ -1,13 +1,12 @@
 import { useState } from 'react'
 import { api } from '../api/client'
 import { PANTS_COLOURS, SKIN_TONES, type AvatarConfig, type UserSummary } from '../api/contracts'
-import { variantFor } from '../theme/characters'
 import {
   avatarFrameStyle,
   avatarFromConfig,
   configFromAvatar,
   PANTS,
-  PRESET_AVATARS,
+  presetAvatarFor,
   rememberSaved,
   rgbToHex,
   savedLookOf,
@@ -64,7 +63,7 @@ interface Props {
 
 /** Character customization (Me page): pick hair, colours, skin, shirt and trousers; everyone sees it. */
 export function AvatarPicker({ persona, onSaved }: Props) {
-  const current = (): AvatarConfig => savedLookOf(persona.id) ?? configFromAvatar(PRESET_AVATARS[variantFor(persona.id)])
+  const current = (): AvatarConfig => savedLookOf(persona.id) ?? configFromAvatar(presetAvatarFor(persona.id))
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<AvatarConfig>(current)
   const [busy, setBusy] = useState(false)
@@ -87,7 +86,7 @@ export function AvatarPicker({ persona, onSaved }: Props) {
     try {
       const r = await api.setAvatar(persona.id, next)
       rememberSaved(persona.id, r.avatar)
-      if (!r.avatar) setDraft(configFromAvatar(PRESET_AVATARS[variantFor(persona.id)]))
+      if (!r.avatar) setDraft(configFromAvatar(presetAvatarFor(persona.id)))
       setMsg({ ok: true, text: r.avatar ? 'Saved. Everyone sees your new look on the map.' : 'Back to your default look.' })
       onSaved()
     } catch (e) {

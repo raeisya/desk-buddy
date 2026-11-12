@@ -8,6 +8,7 @@ import { isFree, suggestSeat } from './components/seating'
 import { planKopiRun } from './components/kopi'
 import { presenceWalks, walkDuration } from './components/walking'
 import { useFloor } from './hooks/useFloor'
+import { useAmbientWalks } from './hooks/useAmbientWalks'
 import { useWalkers } from './hooks/useWalkers'
 import { FindSeat } from './pages/FindSeat'
 import { Login } from './pages/Login'
@@ -43,6 +44,7 @@ export default function App() {
   // before the children render, so map, header, login and Me all see the same latest looks. It's a
   // no-op unless the users list or the floor object changed (so not on every animation frame).
   registerPeople(users, floor)
+  useAmbientWalks(floor, users, walkingIds, startWalks) // John strolls, Chi Keen mingles
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null)
   const [tab, setTab] = useState<AppTab>('map')
