@@ -4,6 +4,7 @@ import type { FloorResponse, PresenceStatus, UserSummary } from '../api/contract
 import { frameStyle, variantFor } from '../theme/characters'
 import { PageHeader } from '../theme/Chrome'
 import { DeskPickerMap } from '../theme/DeskPickerMap'
+import { Modal } from '../theme/Modal'
 import { useNarrow } from '../theme/useNarrow'
 import { floorDay } from '../theme/format'
 import './screens.css'
@@ -128,58 +129,85 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
           <div className="me-move">
             <div className="me-move__head">
               <h2 className="db-label">Permanent desk: {own.id}</h2>
-              <button type="button" className="db-btn db-btn--secondary me-move__toggle" aria-expanded={moving} onClick={() => setMoving((m) => !m)}>
-                {moving ? 'Cancel' : 'Change desk'}
+              <button
+                type="button"
+                className="db-btn db-btn--secondary me-move__toggle"
+                aria-haspopup="dialog"
+                onClick={() => {
+                  setMoving(true)
+                  setMoveMsg(null)
+                }}
+              >
+                Change desk
               </button>
             </div>
-            {moving &&
-              (movable.length === 0 ? (
-                <p className="muted">Every desk has an owner right now. Ask your HOD.</p>
-              ) : (
-                <>
-                  <p className="muted">{narrow ? 'Pick a desk below the map to move there.' : 'Click a green desk to move there. Yours is outlined.'}</p>
-                  <DeskPickerMap
-                    floor={floor}
-                    candidates={movable}
-                    team={persona.team}
-                    currentId={own.id}
-                    youId={persona.id}
-                    selectedId={target?.id ?? null}
-                    onSelect={(d) => {
-                      setTargetId(d?.id ?? null)
-                      setMoveMsg(null)
-                    }}
-                    popover={
-                      target && (
-                        <div className="pick-card" role="dialog" aria-label={`Move to ${target.id}`}>
-                          <div className="pick-card__head">
-                            <h3>Desk {target.id}</h3>
-                            <span className="db-chip db-chip--ok">No owner</span>
-                          </div>
-                          <p className="pick-card__sub">
-                            Move from <strong>{own.id}</strong> to <strong>{target.id}</strong> ({target.zone})? {own.id} becomes free for
-                            someone else.
-                          </p>
-                          <div className="pick-card__actions">
-                            <button type="button" className="db-btn" disabled={moveBusy !== null} onClick={() => move(target.id)}>
-                              {moveBusy ? 'Moving…' : 'Move here'}
-                            </button>
-                            <button type="button" className="db-btn db-btn--plain" onClick={() => setTargetId(null)}>
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      )
-                    }
-                  />
-                </>
-              ))}
-            {moveMsg && (
-              <p className={moveMsg.ok ? 'me-msg' : 'error'} role="status">
+            {moveMsg?.ok && (
+              <p className="me-msg" role="status">
                 {moveMsg.text}
               </p>
             )}
           </div>
+        )}
+
+        {own && (
+          <Modal
+            open={moving}
+            title="Change your desk"
+            onClose={() => {
+              setMoving(false)
+              setTargetId(null)
+            }}
+          >
+            {movable.length === 0 ? (
+              <p className="muted">Every desk has an owner right now. Ask your HOD.</p>
+            ) : (
+              <>
+                <p className="muted modal__hint">
+                  {narrow ? 'Pick a desk below the map to move there.' : 'Click a green desk to move there.'} Yours is{' '}
+                  <strong>{own.id}</strong>, outlined in red.
+                </p>
+                <DeskPickerMap
+                  floor={floor}
+                  candidates={movable}
+                  team={persona.team}
+                  currentId={own.id}
+                  youId={persona.id}
+                  selectedId={target?.id ?? null}
+                  onSelect={(d) => {
+                    setTargetId(d?.id ?? null)
+                    setMoveMsg(null)
+                  }}
+                  popover={
+                    target && (
+                      <div className="pick-card" role="group" aria-label={`Move to ${target.id}`}>
+                        <div className="pick-card__head">
+                          <h3>Desk {target.id}</h3>
+                          <span className="db-chip db-chip--ok">No owner</span>
+                        </div>
+                        <p className="pick-card__sub">
+                          Move from <strong>{own.id}</strong> to <strong>{target.id}</strong> ({target.zone})? {own.id} becomes free for
+                          someone else.
+                        </p>
+                        <div className="pick-card__actions">
+                          <button type="button" className="db-btn" disabled={moveBusy !== null} onClick={() => move(target.id)}>
+                            {moveBusy ? 'Moving…' : 'Move here'}
+                          </button>
+                          <button type="button" className="db-btn db-btn--plain" onClick={() => setTargetId(null)}>
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  }
+                />
+                {moveMsg && !moveMsg.ok && (
+                  <p className="error" role="alert">
+                    {moveMsg.text}
+                  </p>
+                )}
+              </>
+            )}
+          </Modal>
         )}
 
         <div className="me-fix">
