@@ -8,7 +8,7 @@ interface Props {
   floor: FloorResponse
   /** Desks that can be picked (no owner): green, clickable. */
   candidates: FloorDesk[]
-  /** Desks with an owner that can also be picked (Team › Manage desks, to take back): grey, clickable. */
+  /** Desks with an owner that can also be picked (Team › Manage desks, to take back): clickable, not highlighted. */
   owned?: FloorDesk[]
   /** Team whose area gets a dashed outline, so "near the team" is visible. */
   team: string

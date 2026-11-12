@@ -17,7 +17,7 @@ interface Props {
 /**
  * HOD/admin manages permanent desks (C): one "Manage desks" button opens a pop-up with the floor map.
  * - Green desk (no owner): type who gets it, Assign. Someone who already has a desk moves (old one freed).
- * - Grey desk (has an owner): Remove takes it back; it goes to the pool and anyone can claim it.
+ * - Someone's desk (not highlighted, still clickable): Remove takes it back; it goes to the pool.
  * HODs only see their own team's desks to take back and only assign their own team; an admin does anyone.
  * The API re-checks everything (HOD: own team only; desk still has no owner).
  */
@@ -149,9 +149,8 @@ export function ManageDesks({ floor, persona, users, onChanged }: Props) {
 
       <Modal open={open} title="Manage desks" onClose={close}>
         <p className="muted modal__hint">
-          {narrow ? 'Pick a desk below the map.' : 'Click a desk.'} <strong>Green</strong> has no owner: give it to someone.{' '}
-          <strong>Grey</strong> is {isAdmin ? "someone's" : `a ${persona.team}`} permanent desk: take it back. {deskless.length} in{' '}
-          {who} have no desk yet.
+          {narrow ? 'Pick a desk below the map.' : 'Click a desk.'} <strong>Green</strong> desks have no owner: give one to someone.
+          Click {isAdmin ? "someone's" : `a ${persona.team}`} desk to take it back. {deskless.length} in {who} have no desk yet.
         </p>
         {message && (
           <p className={message.ok ? 'hod-assign__ok' : 'error'} role={message.ok ? 'status' : 'alert'}>
