@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { api } from '../api/client'
 import type { FloorDesk, UserSummary } from '../api/contracts'
 import { DESK_STATE_STYLE } from './deskStyles'
-import { isFree } from './seating'
+import { isFree, seatedPerson } from './seating'
 
 interface Props {
   desk: FloorDesk
@@ -12,6 +12,8 @@ interface Props {
   onClose: () => void
   /** Refetch the floor. The live stream usually does this, but it may be down (venue Wi-Fi). */
   onChanged: () => void
+  /** Open the Me tab (set today's status). Shown on your own desk while you're at it without a booking. */
+  onOpenMe?: () => void
 }
 
 type Action = 'take' | 'leave' | null
@@ -24,10 +26,14 @@ function actionFor(desk: FloorDesk, persona: UserSummary | null): Action {
 }
 
 /** Privacy: never shows why an owner is away (MC etc.) — the API doesn't send it either. */
-export function DeskPanel({ desk, persona, note, onClose, onChanged }: Props) {
+export function DeskPanel({ desk, persona, note, onClose, onChanged, onOpenMe }: Props) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const action = actionFor(desk, persona)
+  const seated = seatedPerson(desk)
+  // Your own desk, and you're "in" without a booking (silent = in the office): there's nothing to
+  // leave here — you free it by saying you're out (Me tab, or a Slack post).
+  const atOwnDeskByDefault = !!persona && desk.owner?.id === persona.id && !desk.occupant && seated?.id === persona.id
 
   async function run() {
     if (!persona || !action) return
@@ -60,7 +66,7 @@ export function DeskPanel({ desk, persona, note, onClose, onChanged }: Props) {
         <dt>Owner</dt>
         <dd>{desk.owner ? `${desk.owner.name} · ${desk.owner.team}` : 'Unassigned'}</dd>
         <dt>Sitting here today</dt>
-        <dd>{desk.occupant ? desk.occupant.name : 'Nobody'}</dd>
+        <dd>{seated ? seated.name : 'Nobody'}</dd>
       </dl>
 
       <div className="desk-actions">
@@ -74,6 +80,16 @@ export function DeskPanel({ desk, persona, note, onClose, onChanged }: Props) {
           <button type="button" className="px-button" onClick={run} disabled={busy}>
             {busy ? 'Leaving…' : 'Leave desk'}
           </button>
+        )}
+        {atOwnDeskByDefault && (
+          <>
+            <p className="muted">You're at your desk today. Out today (WFH, MC, leave)?</p>
+            {onOpenMe && (
+              <button type="button" className="px-button" onClick={onOpenMe}>
+                Set my status
+              </button>
+            )}
+          </>
         )}
         {!persona && <p className="muted">Pick who you are to take a desk.</p>}
         {error && <p className="error" role="alert">{error}</p>}

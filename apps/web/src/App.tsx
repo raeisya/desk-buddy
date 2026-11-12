@@ -137,6 +137,7 @@ export default function App() {
       note={activeSuggestion?.deskId === selected.id ? activeSuggestion.note : undefined}
       onClose={() => setSelectedId(null)}
       onChanged={() => void reload()}
+      onOpenMe={() => setTab('me')}
     />
   ) : (
     <PanelHint />
