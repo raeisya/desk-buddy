@@ -46,7 +46,8 @@
 .admin-sprite { width: 20px; height: 30px; flex-shrink: 0; }
 .admin-you { margin-left: 8px; padding: 1px 6px; font-family: var(--font-label); font-size: 12px; color: var(--rl-on-red); background: var(--rl-red); }
 .admin-desk { font-family: var(--font-label); font-weight: 600; white-space: nowrap; }
-.admin-act { text-align: right !important; }
+.admin-act { width: 1%; text-align: right !important; white-space: nowrap; }
+.admin-saving { font-size: 14px; }
 .admin-btn { min-height: 36px; padding: 0 12px; font-size: 15px; white-space: nowrap; }
 .admin-off th,
 .admin-off td { color: var(--rl-muted); background: var(--rl-paper); }

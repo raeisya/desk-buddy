@@ -424,6 +424,10 @@ select:disabled { cursor: not-allowed; opacity: 0.6; }
   border-radius: 0;
 }
 .picker-desk:hover { background: rgba(30, 123, 58, 0.38); }
+/* Desks with an owner (Manage desks): clickable but not highlighted; only free desks are green. */
+.picker-desk--owned { background: transparent; border-color: transparent; }
+.picker-desk--owned:hover { background: transparent; border: 2px solid var(--rl-ink-2); }
+.picker-desk--owned:not(.on) .picker-tag { display: none; }
 .picker-desk.on { background: rgba(200, 50, 43, 0.28); border: 4px solid var(--rl-red); }
 .picker-tag { position: absolute; left: 50%; top: -22px; transform: translateX(-50%); padding: 1px 6px; font-family: var(--font-label); font-size: 12px; font-weight: 600; color: #fff; background: var(--rl-ok); white-space: nowrap; }
 .picker-desk.tag-below .picker-tag { top: auto; bottom: -22px; }
@@ -503,11 +507,32 @@ select:disabled { cursor: not-allowed; opacity: 0.6; }
 .modal__close:hover { border-color: var(--rl-on-red); }
 .modal__body { display: flex; flex-direction: column; gap: 12px; padding: 16px 20px 20px; overflow-y: auto; }
 .modal__hint { margin: 0; }
+.modal--small { width: min(460px, calc(100vw - 32px)); }
 @media (max-width: 760px) {
   .modal { width: 100vw; height: 100dvh; max-height: none; margin: 0; border: 0; box-shadow: none; }
   .modal__title { font-size: 19px; }
   .modal__body { padding: 14px 14px calc(20px + env(safe-area-inset-bottom, 0px)); }
+  /* A confirm stays a centred card, not a full-screen page. */
+  .modal.modal--small { width: calc(100vw - 32px); height: auto; max-height: calc(100dvh - 32px); margin: auto; border: 2px solid var(--rl-red); box-shadow: 6px 6px 0 var(--rl-ink); }
 }
+.confirm__text { margin: 0; font-size: 16px; line-height: 1.45; }
+.confirm__actions { display: flex; gap: 8px; }
+.confirm__actions .db-btn { min-height: 46px; padding: 0 16px; font-size: 16px; }
+.confirm__actions .db-btn:first-child { flex: 1; }
+
+/* ── ⋮ More actions menu for table rows (portalled to <body>, fixed) ── */
+.row-menu__btn { display: inline-grid; place-items: center; width: 40px; height: 40px; padding: 0; color: var(--rl-ink); background: transparent; border: 2px solid transparent; border-radius: 0; cursor: pointer; }
+.row-menu__btn:hover,
+.row-menu__btn[aria-expanded='true'] { background: var(--rl-red-tint); border-color: var(--rl-red); }
+.row-menu__btn:disabled { cursor: not-allowed; opacity: 0.5; }
+.row-menu { position: fixed; z-index: 50; min-width: 168px; margin: 0; padding: 4px 0; list-style: none; background: var(--rl-card); border: 2px solid var(--rl-red); box-shadow: 4px 4px 0 var(--rl-ink); }
+.row-menu__item { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 36px; padding: 0 12px; font: inherit; font-size: 14px; text-align: left; color: var(--rl-ink); background: transparent; border: 0; border-radius: 0; cursor: pointer; white-space: nowrap; }
+.row-menu__item:hover,
+.row-menu__item:focus-visible { background: var(--rl-red-tint); outline: none; }
+.row-menu__item--danger { color: var(--rl-red-dark); font-weight: 600; }
+.row-menu__item:disabled { color: var(--rl-muted); font-weight: 400; cursor: not-allowed; }
+.row-menu__item:disabled:hover { background: transparent; }
+.row-menu__hint { font-family: var(--font-label); font-size: 12px; color: var(--rl-muted); }
 
 /* ── Building blocks for new screens (login, HOD dashboard) ────────────── */
 .db-panel { background: var(--rl-card); border: 2px solid var(--rl-red); box-shadow: 4px 4px 0 var(--rl-ink); }
