@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api } from '../api/client'
 import type { FloorResponse, PresenceStatus, UserSummary } from '../api/contracts'
 import { frameStyle, variantFor } from '../theme/characters'
@@ -42,16 +42,22 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
   const [busy, setBusy] = useState<PresenceStatus | null>(null)
   const [lastSet, setLastSet] = useState<PresenceStatus | null>(null)
   // Your real status today (incl. one set by a Slack post); the floor only says in/out.
-  const [serverStatus, setServerStatus] = useState<PresenceStatus | null>(null)
+  // Tagged with whose it is, so a persona switch can never show the previous person's reason.
+  const [myStatus, setMyStatus] = useState<{ personaId: string; status: PresenceStatus | null } | null>(null)
+  // Bumped on every tap: a lookup that started before the tap is stale and must not overwrite it.
+  const tapVersion = useRef(0)
   useEffect(() => {
     let cancelled = false
+    const version = tapVersion.current
     api.getMyPresence(persona.id).then(
       (r) => {
-        if (cancelled) return
-        setServerStatus(r.status)
-        setLastSet(null) // the server is now up to date with whatever was tapped
+        if (cancelled || version !== tapVersion.current) return
+        setMyStatus({ personaId: persona.id, status: r.status })
+        setLastSet(null) // the server has caught up with whatever was tapped
       },
-      () => undefined, // keep the in/out fallback
+      () => {
+        if (!cancelled) setMyStatus(null) // unknown: fall back to the floor (in/out only)
+      },
     )
     return () => {
       cancelled = true
@@ -66,8 +72,15 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
   const sitting = floor.desks.find((d) => d.occupant?.id === persona.id) ?? null
   // The floor API says in/out but never the reason, so after a refresh an absent owner shows as "Away".
   const ownerOut = own !== null && own.state === 'available' && !sitting
-  const active: PresenceStatus | null =
-    lastSet ?? (serverStatus && (serverStatus !== 'IN_OFFICE' || sitting || own) ? serverStatus : null) ?? (sitting || (own && !ownerOut) ? 'IN_OFFICE' : null)
+  // What to show, in order of trust:
+  // 1. what you just tapped, until the server catches up;
+  // 2. at a desk you booked today → in office (beats a stale WFH from this morning);
+  // 3. your status from the server (incl. Slack) — but "in office" only if the floor agrees;
+  // 4. the floor alone: at your own desk → in office, otherwise unknown (shown as Away / No desk).
+  const atDesk = !!sitting || (own !== null && !ownerOut)
+  const fromServer = myStatus?.personaId === persona.id ? myStatus.status : null
+  const fromServerTrusted = fromServer === 'IN_OFFICE' && !atDesk ? null : fromServer
+  const active: PresenceStatus | null = lastSet ?? (sitting ? 'IN_OFFICE' : fromServerTrusted) ?? (atDesk ? 'IN_OFFICE' : null)
   const scene = active ? SCENES[active] : undefined
   const headline = active ? STATUSES.find((s) => s.id === active)!.label : ownerOut ? 'Away' : 'No desk yet'
   const out = active !== null ? active !== 'IN_OFFICE' : ownerOut
@@ -99,6 +112,7 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
     setMessage(null)
     try {
       await api.setPresence(persona.id, status)
+      tapVersion.current += 1 // any lookup already in flight is now stale
       setLastSet(status)
       setMessage('Saved. The map has been updated.')
       onChanged()

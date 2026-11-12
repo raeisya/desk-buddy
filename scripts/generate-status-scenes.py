@@ -75,14 +75,12 @@ def person(v, rows, *, pyjamas=False, pale=False):
     px = g.colourise(rows, vv)
     if pyjamas:
         light = (226, 234, 248, 255)
-        pants = g.PANTS[v['pants']] + (255,)
         for y, row in enumerate(rows):
             for x, ch in enumerate(row):
                 if ch in 'ta' and y % 2 == 0:
                     px[y][x] = light
                 elif ch == 'p':  # pyjama trousers to match
                     px[y][x] = (150, 176, 226, 255) if y % 2 else light
-        _ = pants
     if pale:
         skin = g.SKIN[v['skin']]
         sick = rgba(mix(skin, (160, 205, 150), 0.42))
