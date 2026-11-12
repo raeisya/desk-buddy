@@ -165,7 +165,7 @@ export default function App() {
           }}
         />
       )}
-      {tab === 'me' && floor && <Me floor={floor} persona={persona} onChanged={() => void reload()} onFindSeat={() => setTab('seat')} />}
+      {tab === 'me' && floor && <Me key={persona.id /* fresh state per person: no leaking someone else's status */} floor={floor} persona={persona} onChanged={() => void reload()} onFindSeat={() => setTab('seat')} />}
       {tab === 'team' && canSeeTeam && floor && (
         <HodDashboard floor={floor} persona={persona} users={users} onChanged={() => void reload()} />
       )}

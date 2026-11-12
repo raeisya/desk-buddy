@@ -35,6 +35,8 @@ export const api = {
   setPresence: (userId: string, status: PresenceStatus, date?: string) =>
     request('/presence', { method: 'POST', body: JSON.stringify({ userId, status, date }) }),
   getClock: () => request<ClockResponse>('/clock'),
+  /** Your own status today (Me page only: the reason is private). */
+  getMyPresence: (userId: string) => request<{ status: PresenceStatus | null }>(`/presence/${encodeURIComponent(userId)}`),
   setClock: (now: string) => request<ClockResponse>('/clock', { method: 'PUT', body: JSON.stringify({ now }) }),
   resetClock: () => request<ClockResponse>('/clock', { method: 'DELETE' }),
   // userId comes from the persona for now; once cookie login lands the API takes it from the session.
