@@ -29,7 +29,7 @@ export class HodService {
   async today(): Promise<HodTodayResponse> {
     const date = this.clock.today();
     const [users, rows] = await Promise.all([
-      this.users.find({ select: { id: true, team: true } }),
+      this.users.find({ where: { active: true }, select: { id: true, team: true } }),
       this.presence.find({ where: { date }, select: { userId: true, status: true } }),
     ]);
     const statusByUser = new Map(rows.map((r) => [r.userId, r.status]));

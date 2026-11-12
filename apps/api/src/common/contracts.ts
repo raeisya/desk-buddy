@@ -86,6 +86,19 @@ export interface HodHeatmapDay {
   occupancy: number | null;
 }
 
+// Admin page + permanent seats (C). Identity is the persona id in the body/query for now, like bookings.
+export interface AdminUser extends UserSummary {
+  active: boolean;
+  /** Permanent desk, if any. */
+  deskId: string | null;
+}
+
+export interface AdminUserPatch {
+  team?: string;
+  role?: Role;
+  active?: boolean;
+}
+
 export interface HodHeatmapResponse {
   totalDesks: number;
   /** Oldest first; each week is Mon–Fri. */
