@@ -20,4 +20,8 @@ export class User {
 
   @Column({ type: 'varchar', default: 'staff' })
   role!: Role;
+
+  /** Admin can deactivate someone (left, never onboarded): hidden from login and counts, desk freed. */
+  @Column({ type: 'boolean', default: true })
+  active!: boolean;
 }

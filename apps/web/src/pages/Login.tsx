@@ -3,11 +3,12 @@ import { usePersona } from '../persona/personaContext'
 import { frameStyle, variantFor } from '../theme/characters'
 import './login.css'
 
-/** The three demo journeys, in the order the pitch tells them. */
+/** The demo journeys, in the order the pitch tells them. */
 const FEATURED = [
   { id: 'u-alia', chip: 'HOD', chipClass: 'db-chip--red', blurb: "See who's in today and how the floor is used" },
   { id: 'u-hafiz', chip: 'Staff', chipClass: 'db-chip--soft', blurb: 'Post "wfh today" in Slack and your desk frees itself' },
   { id: 'u-aina', chip: 'New joiner', chipClass: 'db-chip--ok', blurb: 'Day one, no desk yet. Find a free seat near your team' },
+  { id: 'u-melissa', chip: 'Admin', chipClass: 'db-chip--soft', blurb: 'Manage staff: teams, roles, who has left' },
 ] as const
 
 /** Set once on load if the API sent us back with `#slack=error`; clears the hash. */
@@ -76,8 +77,8 @@ export function Login() {
       </section>
 
       <footer className="tb-footer login-footer">
-        <span>Dwg DB-000 · Sign-in sheet</span>
-        <span>Scale 1:1 · Rev B</span>
+        <span>Demo personas · fictional company</span>
+        <span>Updated live from Slack</span>
       </footer>
     </div>
   )
