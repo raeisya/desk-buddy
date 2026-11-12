@@ -27,6 +27,8 @@
 /* ── Me: one status card ──────────────────────────────────────────────── */
 .me-id { display: flex; gap: 20px; align-items: center; padding: 20px; }
 .me-sprite { width: 64px; height: 96px; flex-shrink: 0; }
+/* Status scene (WFH / MC / outstation): 48x32 pixel art at 3x. */
+.me-scene { width: 144px; height: 96px; flex-shrink: 0; background-size: 100% 100%; image-rendering: pixelated; border: 2px solid var(--rl-ink); }
 .me-id__text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .me-status { margin: 0; font-family: var(--font-display); font-size: 40px; line-height: 1.05; text-transform: uppercase; color: var(--rl-ink); }
 .me-status--in { color: var(--rl-ok); }
@@ -73,6 +75,7 @@
 @media (max-width: 760px) {
   .me-id { gap: 14px; padding: 16px; }
   .me-sprite { width: 48px; height: 72px; }
+  .me-scene { width: 108px; height: 72px; }
   .me-status { font-size: 30px; }
   .me-desk { font-size: 16px; }
   .me-fix { padding: 14px 16px; }
