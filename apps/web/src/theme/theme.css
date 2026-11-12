@@ -404,6 +404,11 @@ select:disabled { cursor: not-allowed; opacity: 0.6; }
 .picker { display: flex; flex-direction: column; gap: 10px; }
 .picker-map { position: relative; border: 2px solid var(--rl-red); }
 .picker-layer { position: absolute; inset: 0; pointer-events: none; }
+/* Inside a picker only the pickable desks are highlighted: drop today's status glow, "Away" bubbles
+   and hover on every other desk (people and name tags stay for context). */
+.picker-map .px-desk { box-shadow: none !important; animation: none !important; outline: none !important; pointer-events: none; }
+.picker-map .px-desk.is-you-empty::before { display: none; }
+.picker-map .px-bubble { display: none; }
 .picker-team { position: absolute; box-sizing: border-box; border: 3px dashed var(--rl-ink); }
 .picker-team span { position: absolute; left: -3px; top: -22px; padding: 1px 8px; font-family: var(--font-label); font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--rl-on-red); background: var(--rl-ink); white-space: nowrap; }
 .picker-current { position: absolute; box-sizing: border-box; border: 3px dashed var(--rl-red); }
