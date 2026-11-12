@@ -113,6 +113,17 @@ try {
     check(`owner already at their desk can't take another (${owner} → ${d2})`, r.status === 409, show(r))
   }
 
+  // 11. saying you're out (WFH/MC/LEAVE/OUTSTATION — Me page or Slack) releases the desk you booked today
+  for (const status of ['WFH', 'MC', 'LEAVE', 'OUTSTATION']) {
+    r = await as(u1).take(d1)
+    if (r.status === 201) made.push([u1, d1])
+    await call('POST', '/presence', { userId: u1, status })
+    const stillThere = (await floor()).some((d) => d.occupant?.id === u1)
+    check(`posting ${status} releases your booking`, !stillThere)
+    if (!stillThere) made.splice(made.findIndex(([u, d]) => u === u1 && d === d1), 1)
+  }
+  await call('POST', '/presence', { userId: u1, status: 'IN_OFFICE' }) // leave the test user "in"
+
   // 10. one person taps two different desks at the same instant: exactly one succeeds
   const [x, y] = await Promise.all([as(u2).take(d2), as(u2).take(d3)])
   if (x.status === 201) made.push([u2, d2])
