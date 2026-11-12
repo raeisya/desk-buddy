@@ -17,7 +17,8 @@ const PAGE_SIZE = 15
 
 /**
  * Staff page for admins (C): everyone in one table. Change team or role, deactivate people who left
- * or never onboarded (their desk goes back to the pool). Permanent desks are assigned by HODs.
+ * or never onboarded (their desk goes back to the pool), or take back someone's permanent desk.
+ * Permanent desks are given on the Team page.
  */
 export function AdminPage({ floor, persona }: Props) {
   const [users, setUsers] = useState<AdminUser[] | null>(null)
@@ -71,6 +72,23 @@ export function AdminPage({ floor, persona }: Props) {
     try {
       const updated = await api.updateUser(persona.id, user.id, patch)
       setUsers((prev) => prev?.map((u) => (u.id === updated.id ? updated : u)) ?? prev)
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  /** Take back someone's permanent desk: it goes back to the pool (no owner). */
+  async function removeDesk(user: AdminUser) {
+    const deskId = user.deskId
+    if (!deskId) return
+    if (!window.confirm(`Remove ${user.name} from ${deskId}? The desk goes back to the pool and anyone can claim it.`)) return
+    setBusyId(user.id)
+    setError(null)
+    try {
+      await api.setDeskOwner(persona.id, deskId, null)
+      setUsers((prev) => prev?.map((u) => (u.id === user.id ? { ...u, deskId: null } : u)) ?? prev)
     } catch (e) {
       setError((e as Error).message)
     } finally {
@@ -168,7 +186,24 @@ export function AdminPage({ floor, persona }: Props) {
                         ))}
                       </select>
                     </td>
-                    <td className="admin-desk">{u.deskId ?? <span className="muted">No desk</span>}</td>
+                    <td className="admin-desk">
+                      {u.deskId ? (
+                        <span className="admin-desk__cell">
+                          {u.deskId}
+                          <button
+                            type="button"
+                            className="db-btn db-btn--plain admin-btn admin-desk__remove"
+                            aria-label={`Remove ${u.name} from ${u.deskId}`}
+                            disabled={busy}
+                            onClick={() => removeDesk(u)}
+                          >
+                            Remove
+                          </button>
+                        </span>
+                      ) : (
+                        <span className="muted">No desk</span>
+                      )}
+                    </td>
                     <td>
                       <span className={`db-chip ${u.active ? 'db-chip--ok' : 'db-chip--soft'}`}>{u.active ? 'Active' : 'Deactivated'}</span>
                     </td>
@@ -200,8 +235,8 @@ export function AdminPage({ floor, persona }: Props) {
         <div className="admin-foot">
           <p className="muted">
             Showing {first}–{last} of {rows.length}
-            {rows.length !== users.length && ` (${users.length} in total)`}. Permanent desks are assigned by each team's HOD on the
-            Team page.
+            {rows.length !== users.length && ` (${users.length} in total)`}. Remove takes a permanent desk back; give one on the Team
+            page.
           </p>
           {pageCount > 1 && (
             <nav className="admin-pager" aria-label="Staff pages">
