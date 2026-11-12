@@ -9,7 +9,8 @@
 //   the middle, chairs on the outside. Row 0 facing 'down' (chair top half, desk bottom half),
 //   row 1 facing 'up' (desk top half, chair bottom half).
 //   Zone A/B/C pods at y=160, D/E/F at y=480; pods at x=96, 480, 864. Corridor y=288..480.
-// All people are fictional. Do not add real staff.
+// All people are fictional except the three team members (Alia, Shane, Raeisya; by consent).
+// Do not add other real staff. Emails stay @acme.example; Slack is linked by slackId only.
 
 import { writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -31,22 +32,23 @@ const TEAMS = {
     code: 'P',
     desks: 12,
     people: [
-      ['u-aina', 'Aina Zulkifli', 'hod'],
+      // Alia, Shane and Raeisya are the team (real first names, by consent). Everyone else is fictional.
+      ['u-alia', 'Alia', 'hod'],
       ['u-hafiz', 'Hafiz Rahim'],
       ['u-meiling', 'Tan Mei Ling'],
       ['u-arjun', 'Arjun Pillai'],
+      ['u-shane', 'Shane'],
+      ['u-raeisya', 'Raeisya'],
       ['u-izzati', 'Nurul Izzati Hassan'],
       ['u-kahwai', 'Chong Kah Wai'],
       ['u-ravi', 'Ravi Shankar'],
       ['u-amirul', 'Amirul Hakim Salleh'],
       ['u-jiahui', 'Ong Jia Hui'],
       ['u-haziq', 'Haziq Firdaus'],
-      ['u-deepa', 'Deepa Nair'],
-      ['u-kenneth', 'Kenneth Lau'],
+      ['u-aina', 'Aina Zulkifli'], // new joiner: no desk yet
       ['u-danial', 'Danial Hakim'],
       ['u-aisyah', 'Siti Aisyah Kamal'],
       ['u-zhihao', 'Yap Zhi Hao'],
-      ['u-thinesh', 'Thinesh Kumar'],
     ],
   },
   Data: {
@@ -160,11 +162,13 @@ const ZONES = [
 // Today's presence. Demo characters are pinned; everyone else is drawn from a seeded distribution.
 // Missing from the file = hasn't posted yet (desk shows "away" until the release cutoff).
 const PINNED_PRESENCE = {
-  'u-aina': 'IN_OFFICE', // HOD persona
+  'u-alia': 'IN_OFFICE', // HOD persona
   'u-hafiz': null, // demo owner: silent at start, posts "wfh today" live
   'u-arjun': null, // no-show owner: auto-released when the demo clock passes 10:00
   'u-meiling': 'IN_OFFICE',
-  'u-danial': 'IN_OFFICE', // junior persona with no desk
+  'u-shane': 'IN_OFFICE',
+  'u-raeisya': 'IN_OFFICE',
+  'u-aina': 'IN_OFFICE', // new joiner persona: no desk, claims the freed one near her team
   'u-farah': 'IN_OFFICE',
   'u-syafiq': 'MC',
 };
