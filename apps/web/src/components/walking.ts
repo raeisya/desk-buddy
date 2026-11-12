@@ -1,25 +1,22 @@
 import type { FloorDesk } from '../api/contracts'
-import { seatPosition, type Direction } from '../theme/characters'
+import { seatPosition, standPosition, type Direction } from '../theme/characters'
 import { seatedPerson } from './seating'
 
 /**
  * Walking routes on C's 1280×768 map, in map px, using FEET points (bottom-centre of the 32×48 frame).
  * Pods sit at x 96–416 / 480–800 / 864–1184, rows y 160/224 and 480/544, so people leave their chair
  * into the aisle beside their row, walk to the nearest vertical gap between pods, then along the
- * open strip below the bottom pods (the "hub" row) to wherever they're going. Nobody cuts through a desk.
+ * open strip below the bottom pods (the "hub" row) to the door. Nobody cuts through a desk.
  */
 export interface Point {
   x: number
   y: number
 }
 
-export type Step =
-  | { kind: 'move'; to: Point }
-  | { kind: 'wait'; ms: number; face: Direction; bubble?: string }
-
+/** A walk: start here, then straight lines through each waypoint in turn. */
 export interface Walk {
   start: Point
-  steps: Step[]
+  path: Point[]
 }
 
 export const WALK_SPEED = 200 // map px per second (a desk is 64 px)
@@ -28,9 +25,15 @@ const HUB_Y = 640 // open strip between the bottom pods and the pantry
 export const DOOR: Point = { x: 640, y: 744 } // gap in the bottom wall
 const AISLE_OFFSET = 28
 
+// Frame top-left ↔ feet offset comes from C's standPosition(), the single source for the anchor.
+const ANCHOR = standPosition(0, 0) // feet (0,0) → frame top-left
+
+/** Feet → top-left of the 32×48 frame. */
+export const frameAt = (feet: Point): Point => standPosition(feet.x, feet.y)
+
 export function seatFeet(d: FloorDesk): Point {
   const s = seatPosition(d)
-  return { x: s.x + 16, y: s.y + 44 }
+  return { x: s.x - ANCHOR.x, y: s.y - ANCHOR.y }
 }
 
 /** Aisle beside the person's row: above the pod for front-facing (top) rows, below for back-facing rows. */
@@ -53,22 +56,12 @@ function seatToHub(d: FloorDesk): Point[] {
   ]
 }
 
-const moves = (points: Point[]): Step[] => points.map((to) => ({ kind: 'move', to }))
-
 export function walkOut(d: FloorDesk): Walk {
-  return { start: seatFeet(d), steps: moves([...seatToHub(d), { x: DOOR.x, y: HUB_Y }, DOOR]) }
+  return { start: seatFeet(d), path: [...seatToHub(d), { x: DOOR.x, y: HUB_Y }, DOOR] }
 }
 
 export function walkIn(d: FloorDesk): Walk {
-  const back = [seatFeet(d), ...seatToHub(d), { x: DOOR.x, y: HUB_Y }].reverse()
-  return { start: DOOR, steps: moves(back) }
-}
-
-/** Seat → spot → wait (with a bubble) → back to the seat. */
-export function roundTrip(d: FloorDesk, spot: Point, waitMs: number, face: Direction, bubble?: string): Walk {
-  const there = [...seatToHub(d), { x: spot.x, y: HUB_Y }, spot]
-  const back = [seatFeet(d), ...seatToHub(d), { x: spot.x, y: HUB_Y }].reverse()
-  return { start: seatFeet(d), steps: [...moves(there), { kind: 'wait', ms: waitMs, face, bubble }, ...moves(back)] }
+  return { start: DOOR, path: [seatFeet(d), ...seatToHub(d), { x: DOOR.x, y: HUB_Y }].reverse() }
 }
 
 const segMs = (a: Point, b: Point) => (Math.hypot(b.x - a.x, b.y - a.y) / WALK_SPEED) * 1000
@@ -83,11 +76,9 @@ function dirOf(a: Point, b: Point): Direction {
 export function walkDuration(w: Walk): number {
   let at = w.start
   let total = 0
-  for (const s of w.steps) {
-    if (s.kind === 'move') {
-      total += segMs(at, s.to)
-      at = s.to
-    } else total += s.ms
+  for (const to of w.path) {
+    total += segMs(at, to)
+    at = to
   }
   return total
 }
@@ -96,7 +87,6 @@ export interface WalkPose {
   feet: Point
   dir: Direction
   moving: boolean
-  bubble?: string
 }
 
 /** Where the walker is `ms` into the walk. */
@@ -104,23 +94,42 @@ export function poseAt(w: Walk, ms: number): WalkPose {
   let at = w.start
   let left = Math.max(0, ms)
   let lastDir: Direction = 'down'
-  for (const s of w.steps) {
-    if (s.kind === 'move') {
-      const d = segMs(at, s.to)
-      const dir: Direction = d > 0 ? dirOf(at, s.to) : lastDir
-      if (left < d) {
-        const f = left / d
-        return { feet: { x: at.x + (s.to.x - at.x) * f, y: at.y + (s.to.y - at.y) * f }, dir, moving: true }
-      }
-      left -= d
-      at = s.to
-      lastDir = dir
-    } else {
-      if (left < s.ms) return { feet: at, dir: s.face, moving: false, bubble: s.bubble }
-      left -= s.ms
+  for (const to of w.path) {
+    const d = segMs(at, to)
+    const dir: Direction = d > 0 ? dirOf(at, to) : lastDir
+    if (left < d) {
+      const f = left / d
+      return { feet: { x: at.x + (to.x - at.x) * f, y: at.y + (to.y - at.y) * f }, dir, moving: true }
     }
+    left -= d
+    at = to
+    lastDir = dir
   }
   return { feet: at, dir: lastDir, moving: false }
+}
+
+const same = (a: Point, b: Point) => Math.abs(a.x - b.x) < 0.5 && Math.abs(a.y - b.y) < 0.5
+const end = (w: Walk): Point => w.path[w.path.length - 1] ?? w.start
+
+/**
+ * Someone mid-walk gets a new walk. If it heads back where they came from (walking in, then they
+ * leave — or the reverse), turn round and retrace the route walked so far, from where they are now,
+ * instead of teleporting to the chair or the door. Otherwise the new walk replaces the old one.
+ */
+export function redirect(old: Walk, elapsedMs: number, next: Walk): Walk {
+  if (!same(end(next), old.start)) return next
+  const here = poseAt(old, elapsedMs).feet
+  const walked: Point[] = [old.start]
+  let at = old.start
+  let left = Math.max(0, elapsedMs)
+  for (const to of old.path) {
+    const d = segMs(at, to)
+    if (left < d) break
+    left -= d
+    at = to
+    walked.push(at)
+  }
+  return { start: here, path: walked.reverse() }
 }
 
 export interface PresenceWalk {

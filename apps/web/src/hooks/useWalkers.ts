@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { CHARACTER_SHEET, type Direction } from '../theme/characters'
-import { poseAt, walkDuration, type Walk } from '../components/walking'
+import { frameAt, poseAt, redirect, walkDuration, type Walk } from '../components/walking'
 
 export interface WalkRequest {
   personId: string
@@ -23,10 +23,13 @@ export interface WalkerView {
   y: number
   dir: Direction
   column: number
-  bubble?: string
 }
 
 const WALK_FPS = 8
+
+function prefersReducedMotion(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
+}
 
 /**
  * People currently walking on the map. Drives a requestAnimationFrame clock only while someone is
@@ -51,16 +54,24 @@ export function useWalkers() {
     return () => cancelAnimationFrame(raf)
   }, [walks.length])
 
-  /** Start walks; a new walk for someone already walking replaces theirs. */
+  /**
+   * Start walks. Someone already walking who now heads back where they came from turns round from
+   * where they are (no teleport). With reduced motion on, nobody walks: the map just updates.
+   */
   const start = useCallback((requests: WalkRequest[]) => {
-    if (requests.length === 0) return
+    if (requests.length === 0 || prefersReducedMotion()) return
     const t = performance.now()
-    const ids = new Set(requests.map((r) => r.personId))
     setNow(t)
-    setWalks((ws) => [
-      ...ws.filter((w) => !ids.has(w.personId)),
-      ...requests.map((r) => ({ ...r, startedAt: t, durationMs: walkDuration(r.walk) })),
-    ])
+    setWalks((ws) => {
+      const current = new Map(ws.map((w) => [w.personId, w]))
+      const fresh = requests.map((r) => {
+        const old = current.get(r.personId)
+        const walk = old ? redirect(old.walk, t - old.startedAt, r.walk) : r.walk
+        return { ...r, walk, startedAt: t, durationMs: walkDuration(walk) }
+      })
+      const ids = new Set(requests.map((r) => r.personId))
+      return [...ws.filter((w) => !ids.has(w.personId)), ...fresh]
+    })
   }, [])
 
   const { walk: walkFrames, idle } = CHARACTER_SHEET.frames
@@ -68,7 +79,8 @@ export function useWalkers() {
     const elapsed = now - w.startedAt
     const pose = poseAt(w.walk, elapsed)
     const column = pose.moving ? walkFrames[Math.floor((elapsed / 1000) * WALK_FPS) % walkFrames.length] : idle[0]
-    return { personId: w.personId, name: w.name, x: pose.feet.x - 16, y: pose.feet.y - 44, dir: pose.dir, column, bubble: pose.bubble }
+    const { x, y } = frameAt(pose.feet)
+    return { personId: w.personId, name: w.name, x, y, dir: pose.dir, column }
   })
   const hiddenSeated = new Set(walks.filter((w) => w.hideSeated).map((w) => w.personId))
 

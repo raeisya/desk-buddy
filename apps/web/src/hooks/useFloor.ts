@@ -12,14 +12,22 @@ export function useFloor(onChange?: (prev: FloorResponse, next: FloorResponse) =
   const [error, setError] = useState<string | null>(null)
   const [live, setLive] = useState(false)
   const prevRef = useRef<FloorResponse | null>(null)
+  // Loads overlap (live event + 60s tick + reload after a booking). Only apply responses newer than
+  // the last one applied, or an older floor would be diffed against a newer one and people would
+  // walk out and straight back in.
+  const requestedRef = useRef(0)
+  const appliedRef = useRef(0)
   const onChangeRef = useRef(onChange)
   useEffect(() => {
     onChangeRef.current = onChange
   }, [onChange])
 
   const load = useCallback(async () => {
+    const seq = ++requestedRef.current
     try {
       const next = await api.getFloor()
+      if (seq < appliedRef.current) return // a newer floor is already on screen
+      appliedRef.current = seq
       if (prevRef.current) onChangeRef.current?.(prevRef.current, next)
       prevRef.current = next
       setFloor(next)

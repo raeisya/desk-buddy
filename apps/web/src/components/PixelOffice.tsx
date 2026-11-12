@@ -32,7 +32,7 @@ interface Props {
   youId?: string | null
   /** Desk picked by "Find me a seat": highlighted, with a "Sit here" bubble instead of "Away". */
   suggestedId?: string | null
-  /** People walking right now (arriving, leaving, kopi run). */
+  /** People walking right now (arriving or leaving). */
   walkers?: WalkerView[]
   /** People whose seated sprite is hidden because they're walking. */
   hiddenSeated?: Set<string>
@@ -59,7 +59,7 @@ export function PixelOffice({ desks, selectedId, youId, suggestedId, walkers = [
     >
       {ordered.map((d) => {
         const seated = seatedPerson(d)
-        // Walking away from the desk (arriving, or on a kopi run): the desk looks taken but the chair is empty.
+        // Still walking in from the door: the desk is taken but the chair stays empty until they arrive.
         const person = seated && !hiddenSeated?.has(seated.id) ? seated : null
         const label = DESK_STATE_STYLE[d.state].label
         const isYou = !!youId && (d.owner?.id === youId || d.occupant?.id === youId)
@@ -140,14 +140,6 @@ export function PixelOffice({ desks, selectedId, youId, suggestedId, walkers = [
             >
               {w.personId === youId ? 'YOU' : shortName(w.name)}
             </span>
-            {w.bubble && (
-              <span
-                className="px-bubble facing-down kopi"
-                style={{ left: pct(w.x + CHARACTER_SHEET.frameWidth / 2, MAP_W), top: pct(w.y - 4, MAP_H) }}
-              >
-                {w.bubble}
-              </span>
-            )}
           </div>
         ))}
     </div>
