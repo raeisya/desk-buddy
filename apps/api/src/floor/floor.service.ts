@@ -41,6 +41,7 @@ export class FloorService {
           w: d.w,
           h: d.h,
           zone: d.zone,
+          facing: d.facing,
           state: deriveDeskState({
             ownerId: d.ownerId,
             ownerStatus: d.ownerId ? statusByUser.get(d.ownerId) ?? null : null,

@@ -5,7 +5,9 @@
 // Map geometry (the map image must match this):
 //   Image 1280×768 px = 40×24 tiles of 32 px. Desk coords are image pixels (top-left).
 //   6 zones, each one pod of 10 desks: 5 across × 2 rows, back-to-back.
-//   Each desk cell is 64×64 (2×2 tiles: desk + chair). Row 0 of a pod faces up, row 1 faces down.
+//   Each desk cell is 64×64 (2×2 tiles: desk + chair). Pods are face-to-face: the two desk rows meet in
+//   the middle, chairs on the outside. Row 0 facing 'down' (chair top half, desk bottom half),
+//   row 1 facing 'up' (desk top half, chair bottom half).
 //   Zone A/B/C pods at y=160, D/E/F at y=480; pods at x=96, 480, 864. Corridor y=288..480.
 // All people are fictional. Do not add real staff.
 
@@ -218,6 +220,7 @@ ZONES.forEach((zone, z) => {
       w: DESK,
       h: DESK,
       zone: zone.name,
+      facing: row === 0 ? 'down' : 'up',
       ownerId,
     });
   });
