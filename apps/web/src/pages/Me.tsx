@@ -1,13 +1,25 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import type { FloorResponse, PresenceStatus, UserSummary } from '../api/contracts'
-import { frameStyle, variantFor } from '../theme/characters'
 import { PageHeader } from '../theme/Chrome'
 import { DeskPickerMap } from '../theme/DeskPickerMap'
 import { Modal } from '../theme/Modal'
 import { useNarrow } from '../theme/useNarrow'
 import { floorDay } from '../theme/format'
 import './screens.css'
+import { AvatarPicker } from '../components/AvatarPicker'
+import { avatarFor, personFrameStyle } from '../components/characterArt'
+import { sceneUrl, type SceneName } from '../components/statusScenes'
+
+/**
+ * Your own status as a little pixel scene, drawn in your own look (components/statusScenes.ts). Private: only on your own Me page — colleagues only ever see "Away".
+ */
+const SCENES: Partial<Record<PresenceStatus, { file: SceneName; alt: string }>> = {
+  WFH: { file: 'wfh', alt: 'At home in pyjamas at a desk with a laptop' },
+  MC: { file: 'mc', alt: 'In bed under a blanket with an ice pack and a thermometer' },
+  OUTSTATION: { file: 'outstation', alt: 'On a bus, holding the pole with a bag in the other hand' },
+  LEAVE: { file: 'leave', alt: 'On holiday at the beach with sunglasses and a coconut drink' },
+}
 
 const STATUSES: { id: PresenceStatus; label: string }[] = [
   { id: 'IN_OFFICE', label: 'In office' },
@@ -33,6 +45,24 @@ interface Props {
 export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
   const [busy, setBusy] = useState<PresenceStatus | null>(null)
   const [lastSet, setLastSet] = useState<PresenceStatus | null>(null)
+  // Your real status today (incl. one set by a Slack post); the floor only says in/out.
+  // App remounts this page per persona (key), so it can never show someone else's reason.
+  const [serverStatus, setServerStatus] = useState<PresenceStatus | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    api.getMyPresence(persona.id).then(
+      (r) => {
+        if (cancelled) return
+        setServerStatus(r.status)
+        // A tap stays until the server reports the same thing, so no lookup (early or late) can undo it.
+        setLastSet((tapped) => (tapped === r.status ? null : tapped))
+      },
+      () => undefined, // keep the last known status on a flaky network
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [persona.id, floor.now])
   const [message, setMessage] = useState<string | null>(null)
   const [moving, setMoving] = useState(false)
   const [moveBusy, setMoveBusy] = useState<string | null>(null)
@@ -44,7 +74,18 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
   const sitting = floor.desks.find((d) => d.occupant?.id === persona.id) ?? null
   // The floor API says in/out but never the reason, so after a refresh an absent owner shows as "Away".
   const ownerOut = own !== null && own.state === 'available' && !sitting
-  const active: PresenceStatus | null = lastSet ?? (sitting || (own && !ownerOut) ? 'IN_OFFICE' : null)
+  // What to show, in order of trust:
+  // 1. what you just tapped, until the server reports it too;
+  // 2. at a desk you booked today → in office (beats a stale WFH from this morning);
+  // 3. your status from the server (incl. Slack) — except "in office" while the floor says your own desk is free;
+  // 4. the floor alone: at your own desk → in office, otherwise unknown (shown as Away / No desk).
+  const atDesk = !!sitting || (own !== null && !ownerOut)
+  const fromServer = serverStatus === 'IN_OFFICE' && ownerOut ? null : serverStatus
+  const active: PresenceStatus | null = lastSet ?? (sitting ? 'IN_OFFICE' : fromServer) ?? (atDesk ? 'IN_OFFICE' : null)
+  const sceneDef = active ? SCENES[active] : undefined
+  // '' if this browser can't draw the scene (canvas blocked/unavailable): show your character instead.
+  const sceneSrc = sceneDef ? sceneUrl(sceneDef.file, avatarFor(persona.id)) : ''
+  const scene = sceneDef && sceneSrc ? sceneDef : undefined
   const headline = active ? STATUSES.find((s) => s.id === active)!.label : ownerOut ? 'Away' : 'No desk yet'
   const out = active !== null ? active !== 'IN_OFFICE' : ownerOut
   const tone = active === 'IN_OFFICE' ? ' me-status--in' : out ? ' me-status--out' : ''
@@ -90,7 +131,16 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
 
       <div className="db-panel me-card">
         <div className="me-id">
-          <span className="me-sprite" style={frameStyle(variantFor(persona.id), 'down', 0)} aria-hidden="true" />
+          {scene ? (
+            <span
+              className="me-scene"
+              role="img"
+              aria-label={scene.alt}
+              style={{ backgroundImage: `url("${sceneSrc}")` }}
+            />
+          ) : (
+            <span className="me-sprite" style={personFrameStyle(persona.id, 'down', 0)} aria-hidden="true" />
+          )}
           <div className="me-id__text">
             <span className="db-label">
               {persona.name} · {persona.team}
@@ -124,6 +174,8 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
             )}
           </div>
         </div>
+
+        <AvatarPicker persona={persona} onSaved={onChanged} />
 
         {own && (
           <div className="me-move">

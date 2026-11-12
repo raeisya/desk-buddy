@@ -35,7 +35,7 @@ SKIN = {
     'brown': (176, 120, 82), 'deep': (130, 86, 58),
 }
 HAIR = {'black': (40, 36, 44), 'dkbrown': (78, 52, 40), 'brown': (120, 80, 50)}
-PANTS = {'navy': (52, 60, 96), 'charcoal': (64, 64, 72), 'khaki': (150, 130, 96), 'black': (40, 40, 48)}
+PANTS = {'suit': (34, 40, 66), 'navy': (52, 60, 96), 'charcoal': (64, 64, 72), 'khaki': (150, 130, 96), 'black': (40, 40, 48)}
 
 # style: short | long | hijab ; hair = hair colour or hijab colour
 VARIANTS = [
@@ -47,7 +47,10 @@ VARIANTS = [
     dict(style='hijab', hair=(60, 140, 140), skin='medlight', shirt=(160, 140, 200), pants='charcoal'),
     dict(style='short', hair=HAIR['black'], skin='deep', shirt=(200, 80, 70), pants='navy'),
     dict(style='long', hair=HAIR['brown'], skin='tan', shirt=(230, 130, 60), pants='charcoal'),
+    # 8: the boss (John only, never picked at random): dark suit, white collar, red tie
+    dict(style='short', hair=HAIR['black'], skin='medlight', shirt=(34, 40, 66), pants='suit', tie=True),
 ]
+COLLAR, TIE = (240, 240, 236, 255), (196, 48, 52, 255)
 
 E = '................'
 
@@ -200,6 +203,15 @@ def build_sheet():
         for di, d in enumerate(DIRS):
             for ci, f in enumerate(frames_for(d, v['style'])):
                 art = colourise(f, v)
+                if v.get('tie') and d == 'down':  # front view: collar across the neck, tie down the middle
+                    jacket = v['shirt'] + (255,)
+                    top = next(y for y in range(FH) if art[y][7] == jacket)
+                    for x in range(6, 10):
+                        art[top][x] = COLLAR
+                    for y in range(top + 1, min(top + 4, FH)):
+                        for x in (7, 8):
+                            if art[y][x] == jacket:
+                                art[y][x] = TIE
                 oy, ox = (vi * 4 + di) * FH, ci * FW
                 for y in range(FH):
                     for x in range(FW):

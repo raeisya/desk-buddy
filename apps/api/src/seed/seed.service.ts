@@ -71,5 +71,11 @@ export class SeedService implements OnApplicationBootstrap {
     const renamed = usersJson.filter((u) => current.has(u.id) && current.get(u.id) !== u.name);
     for (const u of renamed) await this.users.update({ id: u.id }, { name: u.name });
     if (renamed.length) this.log.log(`Updated ${renamed.length} seed user names`);
+    // People added to users.json later (e.g. John). Never re-adds anyone: users are deactivated, not deleted.
+    const added = usersJson.filter((u) => !current.has(u.id));
+    if (added.length) {
+      await this.users.insert(added.map((u) => ({ ...u, role: u.role as Role })));
+      this.log.log(`Added ${added.length} new seed users`);
+    }
   }
 }

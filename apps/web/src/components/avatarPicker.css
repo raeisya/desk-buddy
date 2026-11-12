@@ -1,0 +1,42 @@
+/* Character customization on the Me page (B). Uses C's Redline tokens where they exist. */
+.me-look { padding: 16px 20px; border-top: 1px solid var(--rl-line-soft, #e3e5e1); }
+.me-look__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.me-look__head h2 { margin: 0; }
+.me-look__body { display: grid; grid-template-columns: auto 1fr; gap: 16px 24px; margin-top: 14px; align-items: start; }
+.me-look__preview {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--rl-paper, #f7f7f5);
+  border: 2px solid var(--rl-ink, #12141a);
+}
+.me-look__sprite { width: 64px; height: 96px; }
+.me-look__options { display: grid; gap: 12px; min-width: 0; }
+.me-look fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
+.me-look legend { margin-bottom: 6px; }
+.me-look__seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.me-look__seg button {
+  font: inherit;
+  padding: 6px 12px;
+  cursor: pointer;
+  background: var(--rl-card, #fff);
+  border: 2px solid var(--rl-ink, #12141a);
+}
+.me-look__seg button.on { color: var(--rl-on-red, #fff); background: var(--rl-red, #c8352e); }
+.me-look__swatches { display: flex; flex-wrap: wrap; gap: 6px; }
+.me-look__swatch {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  cursor: pointer;
+  border: 2px solid var(--rl-ink, #12141a);
+}
+.me-look__swatch.on { outline: 3px solid var(--rl-red, #c8352e); outline-offset: 2px; }
+.me-look__actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; }
+.me-look .me-msg, .me-look .error { grid-column: 1 / -1; margin: 0; }
+
+@media (max-width: 760px) {
+  .me-look { padding: 14px 16px; }
+  .me-look__body { grid-template-columns: 1fr; }
+  .me-look__preview { justify-self: start; }
+}

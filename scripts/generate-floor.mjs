@@ -50,6 +50,7 @@ const TEAMS = {
       ['u-danial', 'Danial'],
       ['u-aisyah', 'Aisyah'],
       ['u-zhihao', 'Zhi Hao'],
+      ['u-john', 'John', 'hod'], // HOD with his own room: no desk, wanders in from the door (useAmbientWalks)
     ],
   },
   SpatialQ: {
@@ -182,6 +183,7 @@ const PINNED_PRESENCE = {
   'u-aina': 'IN_OFFICE', // new joiner persona: no desk, claims the freed one near her team
   'u-farah': 'IN_OFFICE',
   'u-syafiq': 'MC',
+  'u-john': 'IN_OFFICE',
 };
 const DISTRIBUTION = [
   ['IN_OFFICE', 0.55],
