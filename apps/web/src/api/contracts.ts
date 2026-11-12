@@ -4,7 +4,7 @@
 export const PRESENCE_STATUSES = ['IN_OFFICE', 'WFH', 'MC', 'LEAVE', 'OUTSTATION'] as const;
 export type PresenceStatus = (typeof PRESENCE_STATUSES)[number];
 
-export const PRESENCE_SOURCES = ['slack', 'manual', 'seed'] as const;
+export const PRESENCE_SOURCES = ['slack', 'slack-status', 'manual', 'seed'] as const;
 export type PresenceSource = (typeof PRESENCE_SOURCES)[number];
 
 export const ROLES = ['staff', 'hod', 'admin'] as const;
