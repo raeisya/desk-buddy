@@ -227,6 +227,39 @@ body {
 .zone-free__sub { font-size: 14px; color: var(--rl-muted); }
 .zone-free__go { padding: 6px 12px; font-weight: 600; font-size: 16px; color: var(--rl-on-red); background: var(--rl-red); border: 2px solid var(--rl-ink); white-space: nowrap; }
 
+/* ── Phone bottom navigation (Map · Find seat · Me) ────────────────────── */
+.app--phone { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--rl-card);
+  border-top: 2px solid var(--rl-red);
+}
+.bottom-nav button {
+  min-height: 60px;
+  margin-top: -2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--rl-muted);
+  background: transparent;
+  border: 0;
+  border-top: 3px solid transparent;
+  border-radius: 0;
+  cursor: pointer;
+}
+.bottom-nav button[aria-current='page'] { color: var(--rl-red); font-weight: 600; border-top-color: var(--rl-red); }
+
 /* ── Phone width: compact header, stacked layout ───────────────────────── */
 @media (max-width: 760px) {
   .app { padding: 10px; gap: 12px; }

@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react'
 import type { FloorDesk, FloorResponse, UserSummary } from '../api/contracts'
 import { frameStyle, variantFor } from './characters'
 import { useNarrow } from './useNarrow'
+import { homeZoneFor, isFree, MAP_H, MAP_W, zonesOf, type Zone } from './zones'
 
 /*
  * Redline "drawing" chrome (C): title block, framed map, side-panel hint, footer.
@@ -70,42 +71,21 @@ export function TitleBlock({ floor, live, persona, onLogout }: TitleBlockProps) 
   )
 }
 
-const MAP_W = 1280
-const MAP_H = 768
-const isFree = (d: FloorDesk) => d.state === 'available' || d.state === 'unassigned'
-
-interface Zone {
-  name: string
-  /** Crop box in map pixels, padded so name tags above/below the pod stay visible. */
-  x: number
-  y: number
-  w: number
-  h: number
-  desks: FloorDesk[]
-}
-
-function zonesOf(desks: FloorDesk[]): Zone[] {
-  const byName = new Map<string, FloorDesk[]>()
-  for (const d of desks) byName.set(d.zone, [...(byName.get(d.zone) ?? []), d])
-  return [...byName].map(([name, ds]) => {
-    const x0 = Math.max(0, Math.min(...ds.map((d) => d.x)) - 24)
-    const y0 = Math.max(0, Math.min(...ds.map((d) => d.y)) - 40)
-    const x1 = Math.min(MAP_W, Math.max(...ds.map((d) => d.x + d.w)) + 24)
-    const y1 = Math.min(MAP_H, Math.max(...ds.map((d) => d.y + d.h)) + 40)
-    return { name, x: x0, y: y0, w: x1 - x0, h: y1 - y0, desks: ds }
-  })
-}
-
-/** The zone where most of this team's desks are (the persona's "home" on the floor). */
-function homeZoneFor(zones: Zone[], team: string | undefined): string | undefined {
-  if (!team) return undefined
-  let best: Zone | undefined
-  let bestCount = 0
-  for (const z of zones) {
-    const n = z.desks.filter((d) => d.owner?.team === team).length
-    if (n > bestCount) [best, bestCount] = [z, n]
-  }
-  return best?.name
+/** Shows only one box of the map (map pixels), scaled to fill the width. Used for phone zone views. */
+export function MapCrop({ box, children }: { box: Pick<Zone, 'x' | 'y' | 'w' | 'h'>; children: ReactNode }) {
+  return (
+    <div className="zone-viewport" style={{ aspectRatio: `${box.w} / ${box.h}` }}>
+      <div
+        className="zone-stage"
+        style={{
+          width: `${(MAP_W / box.w) * 100}%`,
+          transform: `translate(${(-box.x / MAP_W) * 100}%, ${(-box.y / MAP_H) * 100}%)`,
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  )
 }
 
 interface MapFrameProps {
@@ -126,11 +106,9 @@ interface MapFrameProps {
  */
 export function MapFrame({ floor, users, legend, homeTeam, onSelectDesk, children }: MapFrameProps) {
   const narrow = useNarrow()
-  const zones = useMemo(() => zonesOf(floor.desks), [floor.desks])
-  // Floor order: top row left→right, then the next row.
-  const ordered = useMemo(() => [...zones].sort((a, b) => a.y - b.y || a.x - b.x), [zones])
+  const ordered = useMemo(() => zonesOf(floor.desks), [floor.desks])
   const [picked, setPicked] = useState<string | null>(null)
-  const zone = ordered.find((z) => z.name === (picked ?? homeZoneFor(zones, homeTeam))) ?? ordered[0]
+  const zone = ordered.find((z) => z.name === (picked ?? homeZoneFor(ordered, homeTeam))) ?? ordered[0]
 
   const free = floor.desks.filter(isFree).length
   const owners = new Set(floor.desks.flatMap((d) => (d.owner ? [d.owner.id] : [])))
@@ -166,17 +144,7 @@ export function MapFrame({ floor, users, legend, homeTeam, onSelectDesk, childre
               )
             })}
           </nav>
-          <div className="zone-viewport" style={{ aspectRatio: `${zone.w} / ${zone.h}` }}>
-            <div
-              className="zone-stage"
-              style={{
-                width: `${(MAP_W / zone.w) * 100}%`,
-                transform: `translate(${(-zone.x / MAP_W) * 100}%, ${(-zone.y / MAP_H) * 100}%)`,
-              }}
-            >
-              {children}
-            </div>
-          </div>
+          <MapCrop box={zone}>{children}</MapCrop>
           {legend && <div className="mapframe-legend">{legend}</div>}
           <div className="zone-free">
             <h3 className="db-label">Free in {zone.name}</h3>

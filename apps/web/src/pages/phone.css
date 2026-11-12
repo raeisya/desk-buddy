@@ -1,0 +1,29 @@
+/* Phone tabs: Find seat + Me (C). Redline tokens from theme/theme.css. */
+
+.phone-screen { display: flex; flex-direction: column; gap: 14px; }
+.phone-title { margin: 4px 0 0; font-size: 24px; font-weight: 600; }
+.phone-subtitle { margin: 0; font-size: 17px; font-weight: 600; }
+.phone-stack { display: flex; flex-direction: column; gap: 10px; }
+.phone-stack .db-label,
+.phone-stack p { margin: 0; }
+.phone-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.phone-desk { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 22px; text-transform: uppercase; }
+.phone-lead { font-size: 17px; line-height: 1.45; }
+.phone-cta { min-height: 56px; font-size: 20px; }
+.phone-screen .zone-viewport { margin: 0; border: 0; border-bottom: 2px solid var(--rl-red); }
+
+.status-chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.status-chips .status-chip:last-child { grid-column: span 2; }
+.status-chip {
+  min-height: 52px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--rl-red);
+  background: var(--rl-card);
+  border: 2px solid var(--rl-red);
+  border-radius: 0;
+  cursor: pointer;
+}
+.status-chip.on { color: var(--rl-on-red); background: var(--rl-red); border-color: var(--rl-ink); box-shadow: 3px 3px 0 var(--rl-ink); }
+.status-chip:disabled { cursor: progress; opacity: 0.7; }
