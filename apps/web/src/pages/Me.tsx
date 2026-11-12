@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import type { FloorResponse, PresenceStatus, UserSummary } from '../api/contracts'
 import { PageHeader } from '../theme/Chrome'
+import { DeskPickerMap } from '../theme/DeskPickerMap'
+import { Modal } from '../theme/Modal'
+import { useNarrow } from '../theme/useNarrow'
 import { floorDay } from '../theme/format'
 import './screens.css'
 import { AvatarPicker } from '../components/AvatarPicker'
@@ -64,6 +67,8 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
   const [moving, setMoving] = useState(false)
   const [moveBusy, setMoveBusy] = useState<string | null>(null)
   const [moveMsg, setMoveMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [targetId, setTargetId] = useState<string | null>(null)
+  const narrow = useNarrow()
 
   const own = floor.desks.find((d) => d.owner?.id === persona.id) ?? null
   const sitting = floor.desks.find((d) => d.occupant?.id === persona.id) ?? null
@@ -85,11 +90,9 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
   const out = active !== null ? active !== 'IN_OFFICE' : ownerOut
   const tone = active === 'IN_OFFICE' ? ' me-status--in' : out ? ' me-status--out' : ''
 
-  // Desks you could move your permanent seat to: no owner, your team's zones first.
-  const teamZones = new Set(floor.desks.filter((d) => d.owner?.team === persona.team).map((d) => d.zone))
-  const movable = floor.desks
-    .filter((d) => !d.owner)
-    .sort((a, b) => Number(teamZones.has(b.zone)) - Number(teamZones.has(a.zone)) || a.id.localeCompare(b.id))
+  // Desks you could move your permanent seat to: any with no owner.
+  const movable = floor.desks.filter((d) => !d.owner)
+  const target = movable.find((d) => d.id === targetId) ?? null
 
   async function move(deskId: string) {
     setMoveBusy(deskId)
@@ -98,6 +101,7 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
       const r = await api.moveMyDesk(persona.id, deskId)
       setMoveMsg({ ok: true, text: `Moved. ${r.to} is your desk now; ${r.from} is free for someone else.` })
       setMoving(false)
+      setTargetId(null)
       onChanged()
     } catch (e) {
       setMoveMsg({ ok: false, text: (e as Error).message })
@@ -177,34 +181,85 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
           <div className="me-move">
             <div className="me-move__head">
               <h2 className="db-label">Permanent desk: {own.id}</h2>
-              <button type="button" className="db-btn db-btn--secondary me-move__toggle" aria-expanded={moving} onClick={() => setMoving((m) => !m)}>
-                {moving ? 'Cancel' : 'Change desk'}
+              <button
+                type="button"
+                className="db-btn db-btn--secondary me-move__toggle"
+                aria-haspopup="dialog"
+                onClick={() => {
+                  setMoving(true)
+                  setMoveMsg(null)
+                }}
+              >
+                Change desk
               </button>
             </div>
-            {moving &&
-              (movable.length === 0 ? (
-                <p className="muted">Every desk has an owner right now. Ask your HOD.</p>
-              ) : (
-                <ul className="me-move__list">
-                  {movable.map((d) => (
-                    <li key={d.id}>
-                      <span>
-                        <strong>{d.id}</strong> · {d.zone}
-                        {teamZones.has(d.zone) && <span className="me-move__near">near your team</span>}
-                      </span>
-                      <button type="button" className="db-btn me-move__btn" disabled={moveBusy !== null} onClick={() => move(d.id)}>
-                        {moveBusy === d.id ? 'Moving…' : 'Move here'}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ))}
-            {moveMsg && (
-              <p className={moveMsg.ok ? 'me-msg' : 'error'} role="status">
+            {moveMsg?.ok && (
+              <p className="me-msg" role="status">
                 {moveMsg.text}
               </p>
             )}
           </div>
+        )}
+
+        {own && (
+          <Modal
+            open={moving}
+            title="Change your desk"
+            onClose={() => {
+              setMoving(false)
+              setTargetId(null)
+            }}
+          >
+            {movable.length === 0 ? (
+              <p className="muted">Every desk has an owner right now. Ask your HOD.</p>
+            ) : (
+              <>
+                <p className="muted modal__hint">
+                  {narrow ? 'Pick a desk below the map to move there.' : 'Click a green desk to move there.'} Yours is{' '}
+                  <strong>{own.id}</strong>, outlined in red.
+                </p>
+                <DeskPickerMap
+                  floor={floor}
+                  candidates={movable}
+                  team={persona.team}
+                  currentId={own.id}
+                  youId={persona.id}
+                  selectedId={target?.id ?? null}
+                  onSelect={(d) => {
+                    setTargetId(d?.id ?? null)
+                    setMoveMsg(null)
+                  }}
+                  popover={
+                    target && (
+                      <div className="pick-card" role="group" aria-label={`Move to ${target.id}`}>
+                        <div className="pick-card__head">
+                          <h3>Desk {target.id}</h3>
+                          <span className="db-chip db-chip--ok">No owner</span>
+                        </div>
+                        <p className="pick-card__sub">
+                          Move from <strong>{own.id}</strong> to <strong>{target.id}</strong> ({target.zone})? {own.id} becomes free for
+                          someone else.
+                        </p>
+                        <div className="pick-card__actions">
+                          <button type="button" className="db-btn" disabled={moveBusy !== null} onClick={() => move(target.id)}>
+                            {moveBusy ? 'Moving…' : 'Move here'}
+                          </button>
+                          <button type="button" className="db-btn db-btn--plain" onClick={() => setTargetId(null)}>
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  }
+                />
+                {moveMsg && !moveMsg.ok && (
+                  <p className="error" role="alert">
+                    {moveMsg.text}
+                  </p>
+                )}
+              </>
+            )}
+          </Modal>
         )}
 
         <div className="me-fix">

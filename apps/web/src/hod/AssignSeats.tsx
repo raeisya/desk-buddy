@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import { api } from '../api/client'
-import type { FloorResponse, UserSummary } from '../api/contracts'
+import type { FloorDesk, FloorResponse, UserSummary } from '../api/contracts'
+import { DeskPickerMap } from '../theme/DeskPickerMap'
+import { Modal } from '../theme/Modal'
+import { PersonPicker, type PersonOption } from '../theme/PersonPicker'
+import { useNarrow } from '../theme/useNarrow'
 
 interface Props {
   floor: FloorResponse
@@ -11,84 +15,131 @@ interface Props {
 }
 
 /**
- * HOD gives a teammate a permanent desk (C). Only desks with no owner; the team's own zones are listed
- * first. The API re-checks everything (own team only, desk still free), so a stale list just errors.
+ * HOD gives a permanent desk (C): a button in the new-joiner card opens a pop-up with the floor map;
+ * click a green desk, type who gets it, Assign.
+ * Only desks with no owner. Someone who already has a desk moves (their old one is freed).
+ * The API re-checks everything (HOD: own team only; desk still has no owner).
  */
 export function AssignSeats({ floor, persona, users, onChanged }: Props) {
-  const [pick, setPick] = useState<Record<string, string>>({})
-  const [busyId, setBusyId] = useState<string | null>(null)
+  const [deskId, setDeskId] = useState<string | null>(null)
+  const [person, setPerson] = useState<UserSummary | null>(null)
+  const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
+  const narrow = useNarrow()
+  const [open, setOpen] = useState(false)
 
-  const owners = new Set(floor.desks.flatMap((d) => (d.owner ? [d.owner.id] : [])))
-  const deskless = users.filter((u) => u.team === persona.team && !owners.has(u.id))
+  const deskOf = new Map(floor.desks.flatMap((d) => (d.owner ? [[d.owner.id, d.id] as const] : [])))
   const teamZones = new Set(floor.desks.filter((d) => d.owner?.team === persona.team).map((d) => d.zone))
-  const unowned = floor.desks
-    .filter((d) => !d.owner)
-    .sort((a, b) => Number(teamZones.has(b.zone)) - Number(teamZones.has(a.zone)) || a.id.localeCompare(b.id))
+  const candidates = floor.desks.filter((d) => !d.owner)
+  // HODs assign within their team; an admin can assign anyone.
+  const pool = users.filter((u) => persona.role === 'admin' || u.team === persona.team)
+  const deskless = pool.filter((u) => !deskOf.has(u.id))
+  const options: PersonOption[] = [...pool]
+    .sort((a, b) => Number(deskOf.has(a.id)) - Number(deskOf.has(b.id)) || a.name.localeCompare(b.name))
+    .map((u) => ({
+      user: u,
+      hint: deskOf.has(u.id) ? `has ${deskOf.get(u.id)} · will move` : u.id === 'u-aina' ? 'New joiner' : 'No desk',
+    }))
+  const desk = candidates.find((d) => d.id === deskId) ?? null
 
-  async function assign(user: UserSummary) {
-    const deskId = pick[user.id] ?? unowned[0]?.id
-    if (!deskId) return
-    setBusyId(user.id)
+  function select(d: FloorDesk | null) {
+    setDeskId(d?.id ?? null)
+    setMessage(null)
+  }
+
+  async function assign() {
+    if (!desk || !person) return
+    setBusy(true)
     setMessage(null)
     try {
-      await api.setDeskOwner(persona.id, deskId, user.id)
-      setMessage({ ok: true, text: `${deskId} is now ${user.name.split(' ')[0]}'s permanent desk.` })
+      await api.setDeskOwner(persona.id, desk.id, person.id)
+      setMessage({ ok: true, text: `${desk.id} is now ${person.name}'s permanent desk.` })
+      setOpen(false)
+      setDeskId(null)
+      setPerson(null)
       onChanged()
     } catch (e) {
       setMessage({ ok: false, text: (e as Error).message })
     } finally {
-      setBusyId(null)
+      setBusy(false)
     }
   }
 
-  return (
-    <div className="db-panel">
-      <div className="db-panel__head">
-        <h2 className="db-panel__title">Give a permanent desk</h2>
-        <span className="db-panel__hint">
-          {deskless.length} in {persona.team} without one · {unowned.length} desks free to assign
-        </span>
+  const popover = desk && (
+    <div className="pick-card" role="dialog" aria-label={`Assign desk ${desk.id}`}>
+      <div className="pick-card__head">
+        <h3>Desk {desk.id}</h3>
+        <span className="db-chip db-chip--ok">No owner</span>
       </div>
-      <div className="db-panel__body hod-assign">
-        {deskless.length === 0 ? (
-          <p className="muted">Everyone in {persona.team} has a desk.</p>
-        ) : unowned.length === 0 ? (
-          <p className="muted">No desks without an owner right now. Teammates can keep hot-seating.</p>
-        ) : (
-          <ul>
-            {deskless.map((u) => (
-              <li key={u.id}>
-                <span className="hod-assign__name">
-                  {u.name}
-                  {u.id === 'u-aina' && <span className="db-chip db-chip--ok">New joiner</span>}
-                </span>
-                <select
-                  aria-label={`Desk for ${u.name}`}
-                  value={pick[u.id] ?? unowned[0].id}
-                  onChange={(e) => setPick((p) => ({ ...p, [u.id]: e.target.value }))}
-                  disabled={busyId !== null}
-                >
-                  {unowned.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.id} · {d.zone}
-                      {teamZones.has(d.zone) ? ' (near team)' : ''}
-                    </option>
-                  ))}
-                </select>
-                <button type="button" className="db-btn hod-assign__btn" disabled={busyId !== null} onClick={() => assign(u)}>
-                  {busyId === u.id ? 'Assigning…' : 'Assign'}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {message && (
-          <p className={message.ok ? 'hod-assign__ok' : 'error'} role="status">
+      <p className="pick-card__sub">
+        {desk.zone}
+        {teamZones.has(desk.zone) ? `, next to where ${persona.team} sits` : ''}.
+      </p>
+      <PersonPicker key={desk.id} label="Assign to" options={options} value={person} onChange={setPerson} />
+      <div className="pick-card__actions">
+        <button type="button" className="db-btn" disabled={!person || busy} onClick={assign}>
+          {busy ? 'Assigning…' : `Assign ${desk.id}`}
+        </button>
+        <button type="button" className="db-btn db-btn--plain" onClick={() => select(null)}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  )
+
+  const who = persona.role === 'admin' ? 'the company' : persona.team
+
+  return (
+    <div className="hod-assign">
+      <p className="hod-assign__line">
+        <strong>{deskless.length}</strong> in {who} without a desk · <strong>{candidates.length}</strong> desks free to assign
+      </p>
+      <button
+        type="button"
+        className="db-btn hod-assign__open"
+        aria-haspopup="dialog"
+        disabled={candidates.length === 0}
+        onClick={() => {
+          setOpen(true)
+          setMessage(null)
+        }}
+      >
+        Give a permanent desk ▶
+      </button>
+      {message?.ok && (
+        <p className="hod-assign__ok" role="status">
+          {message.text}
+        </p>
+      )}
+
+      <Modal
+        open={open}
+        title="Give a permanent desk"
+        onClose={() => {
+          setOpen(false)
+          setDeskId(null)
+          setPerson(null)
+        }}
+      >
+        <p className="muted modal__hint">
+          {narrow ? 'Pick a desk below the map' : 'Click a green desk'}, then type who gets it. {deskless.length} in {who} have no desk
+          yet; they're listed first.
+        </p>
+        <DeskPickerMap
+          floor={floor}
+          candidates={candidates}
+          team={persona.team}
+          youId={persona.id}
+          selectedId={deskId}
+          onSelect={select}
+          popover={popover}
+        />
+        {message && !message.ok && (
+          <p className="error" role="alert">
             {message.text}
           </p>
         )}
-      </div>
+      </Modal>
     </div>
   )
 }
