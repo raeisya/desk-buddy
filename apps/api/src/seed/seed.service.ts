@@ -9,6 +9,16 @@ import presenceTodayJson from './data/presence-today.json';
 import usersJson from './data/users.json';
 import { generateHistory } from './history';
 
+/** Team names before the rename. The live DB was seeded with these; map them over on boot. */
+const TEAM_RENAMES: Record<string, string> = {
+  Platform: 'CityOS',
+  Data: 'SpatialQ',
+  Mobile: 'ModelChecker',
+  'Product & Design': 'Product',
+  QA: 'DevOps',
+  Corporate: 'Business Development',
+};
+
 /**
  * Stub seed (10 desks) so the frontend has something to render.
  * Person C replaces data/*.json with the full fictional floor + history.
@@ -30,6 +40,8 @@ export class SeedService implements OnApplicationBootstrap {
       await this.users.insert(usersJson.map((u) => ({ ...u, role: u.role as Role })));
       await this.desks.insert(desksJson.map((d) => ({ ...d, facing: d.facing as DeskFacing })));
       this.log.log(`Seeded ${usersJson.length} users and ${desksJson.length} desks`);
+    } else {
+      await this.syncSeedUsers();
     }
 
     const today = this.clock.today();
@@ -47,5 +59,17 @@ export class SeedService implements OnApplicationBootstrap {
     const result = await this.presence.createQueryBuilder().insert().values(history).orIgnore().execute();
     const inserted = result.identifiers.filter(Boolean).length;
     if (inserted) this.log.log(`Seeded ${inserted} presence history rows (past 20 weekdays)`);
+  }
+
+  /**
+   * An existing DB keeps its users, so carry seed renames over: old team names → new ones, and display
+   * names from users.json. Teams are renamed (not reset), so an admin's team changes survive. Safe every boot.
+   */
+  private async syncSeedUsers(): Promise<void> {
+    for (const [from, to] of Object.entries(TEAM_RENAMES)) await this.users.update({ team: from }, { team: to });
+    const current = new Map((await this.users.find({ select: { id: true, name: true } })).map((u) => [u.id, u.name]));
+    const renamed = usersJson.filter((u) => current.has(u.id) && current.get(u.id) !== u.name);
+    for (const u of renamed) await this.users.update({ id: u.id }, { name: u.name });
+    if (renamed.length) this.log.log(`Updated ${renamed.length} seed user names`);
   }
 }
