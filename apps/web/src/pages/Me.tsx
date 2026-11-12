@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { api } from '../api/client'
 import type { FloorResponse, PresenceStatus, UserSummary } from '../api/contracts'
-import './phone.css'
+import './screens.css'
 
 const STATUSES: { id: PresenceStatus; label: string }[] = [
   { id: 'IN_OFFICE', label: 'In office' },
@@ -18,7 +18,7 @@ interface Props {
 }
 
 /**
- * Phone "Me" tab (C): your desk and today's status, with one-tap fixes.
+ * "Me" tab (C): your desk and today's status, with one-tap fixes.
  * The usual way to update is still a Slack post; this is for when the AI got it wrong.
  * Privacy: only you see your own reason here; colleagues see "Away".
  */
@@ -55,21 +55,21 @@ export function Me({ floor, persona, onChanged }: Props) {
   }
 
   return (
-    <section className="phone-screen">
-      <h1 className="phone-title">Today you're</h1>
+    <section className="tab-screen">
+      <h1 className="screen-title">Today you're</h1>
 
       <div className="db-panel">
         <div className="db-panel__head">
           <h2 className="db-panel__title">{active ? STATUSES.find((s) => s.id === active)?.label : inOffice ? 'In office' : 'Out'}</h2>
           {own && <span className={`db-chip ${inOffice ? 'db-chip--soft' : 'db-chip--ok'}`}>{inOffice ? `${own.id} in use` : `${own.id} free for others`}</span>}
         </div>
-        <div className="db-panel__body phone-stack">
+        <div className="db-panel__body screen-stack">
           {own ? (
-            <p className="phone-lead">
+            <p className="screen-lead">
               Your desk is <strong>{own.id}</strong> in {own.zone}.
             </p>
           ) : (
-            <p className="phone-lead">
+            <p className="screen-lead">
               {sitting ? (
                 <>
                   You're at <strong>{sitting.id}</strong> today ({sitting.zone}).
@@ -82,8 +82,8 @@ export function Me({ floor, persona, onChanged }: Props) {
         </div>
       </div>
 
-      <div className="phone-stack">
-        <h3 className="phone-subtitle">Not right? Tap to fix</h3>
+      <div className="screen-stack">
+        <h3 className="screen-subtitle">Not right? Tap to fix</h3>
         <div className="status-chips">
           {STATUSES.map((s) => (
             <button

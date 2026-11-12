@@ -7,7 +7,7 @@ import { FindSeat } from './pages/FindSeat'
 import { Login } from './pages/Login'
 import { Me } from './pages/Me'
 import { usePersona } from './persona/personaContext'
-import { BottomNav, type PhoneTab } from './theme/BottomNav'
+import { AppNav, type AppTab } from './theme/AppNav'
 import { DrawingFooter, MapFrame, PanelHint, TitleBlock } from './theme/Chrome'
 import { useNarrow } from './theme/useNarrow'
 
@@ -15,7 +15,7 @@ export default function App() {
   const { floor, error, live, reload } = useFloor()
   const { persona, users, setPersona } = usePersona()
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [tab, setTab] = useState<PhoneTab>('map')
+  const [tab, setTab] = useState<AppTab>('map')
   // Look the desk up in the latest floor so the panel updates live when state changes.
   const selected = floor?.desks.find((d) => d.id === selectedId) ?? null
   const narrow = useNarrow()
@@ -71,40 +71,29 @@ export default function App() {
     </div>
   )
 
-  // Phone: one tab at a time, bottom navigation (Map · Find seat · Me).
-  if (narrow) {
-    return (
-      <div className="app app--phone">
-        {header}
-        <main>
-          {error && <p className="error">Can't reach the API: {error}</p>}
-          {tab === 'map' && workspace}
-          {tab === 'seat' && floor && (
-            <FindSeat
-              floor={floor}
-              persona={persona}
-              onChanged={() => void reload()}
-              onShowOnMap={(d) => {
-                setSelectedId(d.id)
-                setTab('map')
-              }}
-            />
-          )}
-          {tab === 'me' && floor && <Me floor={floor} persona={persona} onChanged={() => void reload()} />}
-        </main>
-        <BottomNav tab={tab} onTab={setTab} />
-      </div>
-    )
-  }
-
+  // One tab at a time on every screen size: Map · Find seat · Me.
+  // Phone puts the nav at the bottom (thumb reach); desktop puts it under the title block.
   return (
-    <div className="app">
+    <div className={narrow ? 'app app--phone' : 'app'}>
       {header}
+      {!narrow && <AppNav tab={tab} onTab={setTab} placement="top" />}
       <main>
         {error && <p className="error">Can't reach the API: {error}</p>}
-        {workspace}
+        {tab === 'map' && workspace}
+        {tab === 'seat' && floor && (
+          <FindSeat
+            floor={floor}
+            persona={persona}
+            onChanged={() => void reload()}
+            onShowOnMap={(d) => {
+              setSelectedId(d.id)
+              setTab('map')
+            }}
+          />
+        )}
+        {tab === 'me' && floor && <Me floor={floor} persona={persona} onChanged={() => void reload()} />}
       </main>
-      <DrawingFooter />
+      {narrow ? <AppNav tab={tab} onTab={setTab} placement="bottom" /> : <DrawingFooter />}
     </div>
   )
 }

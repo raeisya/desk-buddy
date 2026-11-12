@@ -4,7 +4,7 @@ import type { FloorDesk, FloorResponse, UserSummary } from '../api/contracts'
 import { PixelOffice } from '../components/PixelOffice'
 import { MapCrop } from '../theme/Chrome'
 import { rankSeats, zonesOf } from '../theme/zones'
-import './phone.css'
+import './screens.css'
 
 interface Props {
   floor: FloorResponse
@@ -15,7 +15,7 @@ interface Props {
   onShowOnMap: (desk: FloorDesk) => void
 }
 
-/** Phone "Find seat" tab (C): the best free desk near your team, one tap to take it. */
+/** "Find seat" tab (C): the best free desk near your team, one tap to take it. */
 export function FindSeat({ floor, persona, onChanged, onShowOnMap }: Props) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -42,15 +42,15 @@ export function FindSeat({ floor, persona, onChanged, onShowOnMap }: Props) {
 
   if (sitting) {
     return (
-      <section className="phone-screen">
-        <h1 className="phone-title">You're sorted for today</h1>
+      <section className="tab-screen">
+        <h1 className="screen-title">You're sorted for today</h1>
         <div className="db-panel">
           <div className="db-panel__head">
             <h2 className="db-panel__title">Desk {sitting.id}</h2>
             <span className="db-chip db-chip--ok">Yours today</span>
           </div>
-          <div className="db-panel__body phone-stack">
-            <p className="phone-lead">{sitting.zone}. See you there.</p>
+          <div className="db-panel__body screen-stack">
+            <p className="screen-lead">{sitting.zone}. See you there.</p>
             <button type="button" className="db-btn db-btn--secondary" onClick={() => onShowOnMap(sitting)}>
               Show on map
             </button>
@@ -66,32 +66,32 @@ export function FindSeat({ floor, persona, onChanged, onShowOnMap }: Props) {
 
   if (!best) {
     return (
-      <section className="phone-screen">
-        <h1 className="phone-title">No free desks right now</h1>
-        <p className="phone-lead">Desks free up when their owners post in Slack that they're out. This page updates live.</p>
+      <section className="tab-screen">
+        <h1 className="screen-title">No free desks right now</h1>
+        <p className="screen-lead">Desks free up when their owners post in Slack that they're out. This page updates live.</p>
       </section>
     )
   }
 
   return (
-    <section className="phone-screen">
-      <h1 className="phone-title">Best seat for you</h1>
-      <div className="db-panel">
+    <section className="tab-screen">
+      <h1 className="screen-title">Best seat for you</h1>
+      <div className="db-panel seat-card">
         {zone && (
           <MapCrop box={zone}>
             <PixelOffice desks={floor.desks} selectedId={best.id} youId={persona.id} onSelect={onShowOnMap} />
           </MapCrop>
         )}
-        <div className="db-panel__body phone-stack">
-          <div className="phone-row">
-            <h2 className="phone-desk">Desk {best.id}</h2>
+        <div className="db-panel__body screen-stack">
+          <div className="screen-row">
+            <h2 className="screen-desk">Desk {best.id}</h2>
             <span className="db-chip db-chip--ok">Free today</span>
           </div>
-          <p className="phone-lead">
+          <p className="screen-lead">
             {best.zone}, near the <strong>{persona.team}</strong> team.{' '}
             {teammatesIn > 0 && `${teammatesIn} of your teammates are in today.`}
           </p>
-          <button type="button" className="db-btn phone-cta" disabled={busy} onClick={() => run(() => api.claimDesk(best.id, persona.id))}>
+          <button type="button" className="db-btn screen-cta" disabled={busy} onClick={() => run(() => api.claimDesk(best.id, persona.id))}>
             {busy ? 'Taking…' : `Take ${best.id} ▶`}
           </button>
           {error && <p className="error" role="alert">{error}</p>}
@@ -99,7 +99,7 @@ export function FindSeat({ floor, persona, onChanged, onShowOnMap }: Props) {
       </div>
 
       {others.length > 0 && (
-        <div className="phone-stack">
+        <div className="screen-stack">
           <h3 className="db-label">Other options</h3>
           {others.map((d) => (
             <button key={d.id} type="button" className="zone-free__item" onClick={() => onShowOnMap(d)}>

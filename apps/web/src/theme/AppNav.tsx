@@ -1,8 +1,8 @@
 import type { ReactElement } from 'react'
 
-export type PhoneTab = 'map' | 'seat' | 'me'
+export type AppTab = 'map' | 'seat' | 'me'
 
-const TABS: { id: PhoneTab; label: string; icon: ReactElement }[] = [
+const TABS: { id: AppTab; label: string; icon: ReactElement }[] = [
   {
     id: 'map',
     label: 'Map',
@@ -35,10 +35,21 @@ const TABS: { id: PhoneTab; label: string; icon: ReactElement }[] = [
   },
 ]
 
-/** Phone-only bottom navigation (C): Map · Find seat · Me. */
-export function BottomNav({ tab, onTab }: { tab: PhoneTab; onTab: (tab: PhoneTab) => void }) {
+/**
+ * Main navigation (C): Map · Find seat · Me.
+ * Phone: fixed bar at the bottom (thumb reach). Desktop: tab strip under the title block.
+ */
+export function AppNav({
+  tab,
+  onTab,
+  placement,
+}: {
+  tab: AppTab
+  onTab: (tab: AppTab) => void
+  placement: 'top' | 'bottom'
+}) {
   return (
-    <nav className="bottom-nav" aria-label="Main">
+    <nav className={`app-nav app-nav--${placement}`} aria-label="Main">
       {TABS.map((t) => (
         <button key={t.id} type="button" aria-current={t.id === tab ? 'page' : undefined} onClick={() => onTab(t.id)}>
           {t.icon}

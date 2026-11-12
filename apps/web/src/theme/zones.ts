@@ -22,7 +22,7 @@ export function zonesOf(desks: FloorDesk[]): Zone[] {
   return [...byName]
     .map(([name, ds]) => {
       const x0 = Math.max(0, Math.min(...ds.map((d) => d.x)) - 24)
-      const y0 = Math.max(0, Math.min(...ds.map((d) => d.y)) - 40)
+      const y0 = Math.max(0, Math.min(...ds.map((d) => d.y)) - 56)
       const x1 = Math.min(MAP_W, Math.max(...ds.map((d) => d.x + d.w)) + 24)
       const y1 = Math.min(MAP_H, Math.max(...ds.map((d) => d.y + d.h)) + 40)
       return { name, x: x0, y: y0, w: x1 - x0, h: y1 - y0, desks: ds }
