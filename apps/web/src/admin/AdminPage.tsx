@@ -3,6 +3,7 @@ import { api } from '../api/client'
 import { ROLES, type AdminUser, type AdminUserPatch, type FloorResponse, type Role, type UserSummary } from '../api/contracts'
 import { PageHeader } from '../theme/Chrome'
 import { ConfirmDialog } from '../theme/ConfirmDialog'
+import { RowMenu, type RowMenuItem } from '../theme/RowMenu'
 import './admin.css'
 import { personFrameStyle } from '../components/characterArt'
 
@@ -88,6 +89,15 @@ export function AdminPage({ floor, persona }: Props) {
       await api.setDeskOwner(persona.id, deskId, null)
       return { ...user, deskId: null }
     })
+
+  /** What the ⋮ menu offers for a row. You can't deactivate yourself (the API refuses too). */
+  function actionsFor(u: AdminUser, self: boolean): RowMenuItem[] {
+    const items: RowMenuItem[] = []
+    if (u.deskId) items.push({ label: `Remove from ${u.deskId}`, danger: true, onSelect: () => setPending({ kind: 'remove', user: u }) })
+    if (!self && u.active) items.push({ label: 'Deactivate', danger: true, onSelect: () => setPending({ kind: 'deactivate', user: u }) })
+    if (!self && !u.active) items.push({ label: 'Reactivate', onSelect: () => void save(u, { active: true }) })
+    return items
+  }
 
   function confirmPending() {
     if (!pending) return
@@ -185,37 +195,15 @@ export function AdminPage({ floor, persona }: Props) {
                         ))}
                       </select>
                     </td>
-                    <td className="admin-desk">
-                      {u.deskId ? (
-                        <span className="admin-desk__cell">
-                          {u.deskId}
-                          <button
-                            type="button"
-                            className="db-btn db-btn--plain admin-btn admin-desk__remove"
-                            aria-label={`Remove ${u.name} from ${u.deskId}`}
-                            disabled={busy}
-                            onClick={() => setPending({ kind: 'remove', user: u })}
-                          >
-                            Remove
-                          </button>
-                        </span>
-                      ) : (
-                        <span className="muted">No desk</span>
-                      )}
-                    </td>
+                    <td className="admin-desk">{u.deskId ?? <span className="muted">No desk</span>}</td>
                     <td>
                       <span className={`db-chip ${u.active ? 'db-chip--ok' : 'db-chip--soft'}`}>{u.active ? 'Active' : 'Deactivated'}</span>
                     </td>
                     <td className="admin-act">
-                      {!self && (
-                        <button
-                          type="button"
-                          className={`db-btn ${u.active ? 'db-btn--plain' : 'db-btn--secondary'} admin-btn`}
-                          disabled={busy}
-                          onClick={() => (u.active ? setPending({ kind: 'deactivate', user: u }) : save(u, { active: true }))}
-                        >
-                          {busy ? 'Saving…' : u.active ? 'Deactivate' : 'Reactivate'}
-                        </button>
+                      {busy ? (
+                        <span className="muted admin-saving">Saving…</span>
+                      ) : (
+                        <RowMenu label={`More actions for ${u.name}`} items={actionsFor(u, self)} />
                       )}
                     </td>
                   </tr>
@@ -234,8 +222,8 @@ export function AdminPage({ floor, persona }: Props) {
         <div className="admin-foot">
           <p className="muted">
             Showing {first}–{last} of {rows.length}
-            {rows.length !== users.length && ` (${users.length} in total)`}. Remove takes a permanent desk back; give one with Manage
-            desks on the Team page.
+            {rows.length !== users.length && ` (${users.length} in total)`}. Remove a desk or deactivate from ⋮; give desks with
+            Manage desks on the Team page.
           </p>
           {pageCount > 1 && (
             <nav className="admin-pager" aria-label="Staff pages">
