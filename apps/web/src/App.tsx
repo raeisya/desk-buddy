@@ -35,7 +35,15 @@ export default function App() {
                 onSelect={(d) => setSelectedId(d.id)}
               />
             </div>
-            {selected && <DeskPanel desk={selected} onClose={() => setSelectedId(null)} />}
+            {selected && (
+              <DeskPanel
+                key={selected.id /* fresh busy/error state per desk */}
+                desk={selected}
+                persona={persona}
+                releaseCutoff={floor.releaseCutoff}
+                onClose={() => setSelectedId(null)}
+              />
+            )}
           </div>
         )}
       </main>

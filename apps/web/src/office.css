@@ -92,3 +92,17 @@
 .desk-panel header button { font: inherit; cursor: pointer; border: 2px solid #12141a; background: transparent; }
 .desk-panel dt { color: var(--muted); font-size: 0.75rem; margin-top: 8px; }
 .desk-panel dd { margin: 0; }
+.desk-actions { margin-top: 14px; display: grid; gap: 8px; }
+.desk-actions p { margin: 0; font-size: 0.8rem; }
+.px-button {
+  font: 700 0.9rem ui-monospace, 'SF Mono', Menlo, monospace;
+  padding: 8px 10px;
+  cursor: pointer;
+  color: #12141a;
+  background: #fff;
+  border: 3px solid #12141a;
+  box-shadow: 3px 3px 0 #12141a;
+}
+.px-button.primary { background: var(--desk-available); }
+.px-button:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #12141a; }
+.px-button:disabled { opacity: 0.6; cursor: progress; }
