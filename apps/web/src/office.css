@@ -139,3 +139,46 @@
 .px-avatar.walking { z-index: 6; }
 .px-walker .px-name { z-index: 7; }
 @media (prefers-reduced-motion: reduce) { .px-avatar.typing { animation: none; } }
+
+/* Kopi Easter Egg (challenge round): hidden hit area on the KOPI counter, steam, banner, kopi bubbles. */
+/* No pointer cursor on purpose: it's an easter egg, nothing should hint that the counter is clickable. */
+.px-kopi-hit { position: absolute; z-index: 4; padding: 0; background: transparent; border: 0; cursor: default; }
+.px-kopi-hit:focus-visible { outline: 2px dashed #fff; }
+.px-walker .px-bubble.kopi { z-index: 8; color: #fff; background: #6f4e37; }
+.px-steam { position: absolute; z-index: 5; width: 2.5%; height: 8%; transform: translate(-50%, -100%); pointer-events: none; }
+.px-steam span {
+  position: absolute;
+  bottom: 0;
+  width: 22%;
+  aspect-ratio: 1;
+  background: rgba(255, 255, 255, 0.85);
+  animation: px-steam 1.4s steps(6) infinite;
+}
+.px-steam span:nth-child(1) { left: 10%; }
+.px-steam span:nth-child(2) { left: 40%; animation-delay: -0.45s; }
+.px-steam span:nth-child(3) { left: 70%; animation-delay: -0.9s; }
+@keyframes px-steam {
+  0% { transform: translateY(0); opacity: 0.9; }
+  100% { transform: translateY(-260%); opacity: 0; }
+}
+.px-kopi-banner {
+  position: absolute;
+  z-index: 9;
+  left: 50%;
+  top: 3%;
+  transform: translateX(-50%);
+  max-width: 90%;
+  padding: 6px 12px;
+  font: 700 clamp(9px, 1.4cqw, 16px) / 1.2 ui-monospace, 'SF Mono', Menlo, monospace;
+  color: #fff;
+  text-align: center;
+  background: #6f4e37;
+  border: 3px solid #12141a;
+  box-shadow: 3px 3px 0 #12141a;
+  animation: px-pop 0.3s steps(3);
+}
+@keyframes px-pop {
+  from { transform: translateX(-50%) scale(0.6); }
+  to { transform: translateX(-50%) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) { .px-steam span, .px-kopi-banner { animation: none; } }
