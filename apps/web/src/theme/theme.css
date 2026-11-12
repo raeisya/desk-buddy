@@ -60,7 +60,7 @@ body {
 
 :focus-visible { outline: 3px solid var(--rl-ink); outline-offset: 2px; }
 
-.app { max-width: 1600px; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+.app { max-width: 1600px; min-height: 100dvh; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
 
 /* ── Title block (header) ──────────────────────────────────────────────── */
 .tb {
@@ -112,6 +112,7 @@ body {
   font-size: 13px;
   text-transform: uppercase;
   color: var(--rl-muted);
+  margin-top: auto; /* short pages: footer sits at the bottom of the screen, not mid-page */
 }
 
 /* ── Workspace: framed map + side panel ────────────────────────────────── */
@@ -246,6 +247,7 @@ body {
 .app--desktop {
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr);
+  grid-template-rows: auto 1fr auto; /* header · content (stretches) · footer at the bottom */
   align-items: start;
   column-gap: 20px;
 }
@@ -280,7 +282,7 @@ body {
 .app-nav--side button:last-child { border-bottom: 0; }
 .app-nav--side button[aria-current='page'] { border-left-color: var(--rl-red); background: var(--rl-paper); }
 /* The map fills the right side, capped by screen height so the whole floor stays in view. */
-.app--desktop .map-wrap { max-width: min(1280px, calc((100dvh - 230px) * 5 / 3)); }
+.app--desktop .map-wrap { max-width: min(1280px, calc((100dvh - 330px) * 5 / 3)); } /* room for header, find-seat bar, legend, footer */
 
 /* Small laptops: narrower left column; header cells may wrap instead of overlapping */
 @media (max-width: 1200px) {
