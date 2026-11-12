@@ -10,13 +10,20 @@ const FEATURED = [
   { id: 'u-aina', chip: 'New joiner', chipClass: 'db-chip--ok', blurb: 'Day one, no desk yet. Find a free seat near your team' },
 ] as const
 
+/** Set once on load if the API sent us back with `#slack=error`; clears the hash. */
+function readSlackError(): boolean {
+  if (window.location.hash !== '#slack=error') return false
+  history.replaceState(null, '', window.location.pathname + window.location.search)
+  return true
+}
+
 /**
  * Demo login = persona picker (C). Picking a persona calls B's setPersona(); the app takes over.
- * "Sign in with Slack" is show-only: real OAuth is roadmap.
+ * "Sign in with Slack" goes through the API (/api/auth/slack) and lands back as the linked persona.
  */
 export function Login() {
   const { users, setPersona } = usePersona()
-  const [slackClicked, setSlackClicked] = useState(false)
+  const [slackFailed] = useState(readSlackError)
 
   const featured = FEATURED.flatMap((f) => {
     const user = users.find((u) => u.id === f.id)
@@ -55,15 +62,15 @@ export function Login() {
         <div className="login-alt">
         <div className="login-slack">
           <span id="slack-note" className="db-label" role="status">
-            {slackClicked ? 'On our roadmap · pick a persona for now' : 'Coming soon'}
+            {slackFailed ? 'Slack sign-in failed · pick a persona for now' : 'Or use your Slack account'}
           </span>
-          <button type="button" className="db-btn db-btn--plain" onClick={() => setSlackClicked(true)} aria-describedby="slack-note">
+          <a href="/api/auth/slack" className="db-btn db-btn--plain" aria-describedby="slack-note">
             <svg width="20" height="20" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
               <rect x="2" y="2" width="14" height="14" />
               <path d="M6 9h6M9 6v6" />
             </svg>
             Sign in with Slack
-          </button>
+          </a>
         </div>
         </div>
       </section>
