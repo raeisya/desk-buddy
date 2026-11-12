@@ -10,7 +10,11 @@ export function ownerAway(d: FloorDesk): boolean {
   return d.state === 'available' && d.owner !== null && d.occupant === null
 }
 
-const isFree = (d: FloorDesk) => d.state === 'available' || d.state === 'unassigned'
+/** Can be taken right now. Mirrors the bookings API rule; the API still has the final say. */
+export function isFree(d: FloorDesk): boolean {
+  return d.state === 'available' || d.state === 'unassigned'
+}
+
 const centre = (d: FloorDesk) => ({ x: d.x + d.w / 2, y: d.y + d.h / 2 })
 const dist = (a: FloorDesk, b: FloorDesk) => {
   const p = centre(a)
@@ -18,8 +22,8 @@ const dist = (a: FloorDesk, b: FloorDesk) => {
   return Math.hypot(p.x - q.x, p.y - q.y)
 }
 
-/** "Nearby" = within about three desks (desks are 64 map px). */
-const NEARBY_PX = 3 * 64
+/** "Nearby" = within about three desk widths. */
+const NEARBY_DESKS = 3
 /** Score against the few closest teammates, so one teammate far away doesn't pull the pick off. */
 const ANCHORS_PER_DESK = 3
 
@@ -28,8 +32,10 @@ export type SeatSuggestion =
   | { ok: false; note: string; deskId?: string }
 
 /**
- * The free desk closest to where your team is sitting today. If none of them is in, closest to your
- * team's own desks. Pure, so it's easy to reason about; the API still decides if the desk can be taken.
+ * Where should `me` sit? In order:
+ * 1. already seated → say where;  2. own desk is free (said WFH, came in anyway) → take it back;
+ * 3. the free desk closest to teammates sitting today, else to the team's own desks;
+ * 4. no team desks at all → prefer an unowned hot desk over an absent colleague's desk.
  */
 export function suggestSeat(desks: FloorDesk[], me: { id: string; team: string }): SeatSuggestion {
   const mine = desks.find((d) => seatedPerson(d)?.id === me.id)
@@ -38,24 +44,32 @@ export function suggestSeat(desks: FloorDesk[], me: { id: string; team: string }
   const free = desks.filter(isFree)
   if (free.length === 0) return { ok: false, note: 'No free desks right now.' }
 
+  const ownFree = free.find((d) => d.owner?.id === me.id)
+  if (ownFree) return { ok: true, desk: ownFree, note: `Your own desk ${ownFree.id} is free. Take it back.` }
+
   const teammatesIn = desks.filter((d) => {
     const p = seatedPerson(d)
     return p !== null && p.id !== me.id && p.team === me.team
   })
   const teamDesks = desks.filter((d) => d.owner?.team === me.team)
   const anchors = teammatesIn.length > 0 ? teammatesIn : teamDesks
-  if (anchors.length === 0) return { ok: true, desk: free[0], note: `No ${me.team} desks on this floor, so here's a free one.` }
+  if (anchors.length === 0) {
+    const desk = free.find((d) => d.owner === null) ?? free[0]
+    return { ok: true, desk, note: `No ${me.team} desks on this floor, so here's a free one.` }
+  }
 
   const score = (d: FloorDesk) => {
     const nearest = anchors.map((a) => dist(d, a)).sort((x, y) => x - y).slice(0, ANCHORS_PER_DESK)
     return nearest.reduce((s, v) => s + v, 0) / nearest.length
   }
-  const best = free.reduce((a, b) => (score(b) < score(a) ? b : a))
+  const best = free
+    .map((desk) => ({ desk, s: score(desk) }))
+    .reduce((a, b) => (b.s < a.s ? b : a)).desk
 
   if (teammatesIn.length === 0) {
     return { ok: true, desk: best, note: `None of ${me.team} is in yet. This is the closest free desk to your team's desks.` }
   }
-  const nearby = teammatesIn.filter((d) => dist(best, d) <= NEARBY_PX).length
+  const nearby = teammatesIn.filter((d) => dist(best, d) <= NEARBY_DESKS * best.w).length
   const who = nearby === 1 ? '1 teammate' : `${nearby} teammates`
   return {
     ok: true,

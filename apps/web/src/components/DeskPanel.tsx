@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { api } from '../api/client'
 import type { FloorDesk, UserSummary } from '../api/contracts'
 import { DESK_STATE_STYLE } from './deskStyles'
+import { isFree } from './seating'
 
 interface Props {
   desk: FloorDesk
@@ -19,7 +20,7 @@ type Action = 'take' | 'leave' | null
 function actionFor(desk: FloorDesk, persona: UserSummary | null): Action {
   if (!persona) return null
   if (desk.occupant?.id === persona.id) return 'leave'
-  return desk.state === 'available' || desk.state === 'unassigned' ? 'take' : null
+  return isFree(desk) ? 'take' : null
 }
 
 /** Privacy: never shows why an owner is away (MC etc.) — the API doesn't send it either. */

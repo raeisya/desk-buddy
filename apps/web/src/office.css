@@ -90,7 +90,7 @@
 .px-name.facing-up { transform: translate(-50%, 2px); }
 .px-name.is-you { color: #12141a; background: #ffd84a; }
 
-@media (prefers-reduced-motion: reduce) { .px-desk { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .px-desk, .px-bubble { animation: none !important; } }
 
 .persona-switcher { display: inline-flex; align-items: center; gap: 6px; font-size: 0.9rem; }
 .persona-switcher select { font: inherit; padding: 2px 4px; }
@@ -118,7 +118,7 @@
 
 
 /* "Find me a seat" suggestion: bright, bouncing so it's easy to spot on a big screen. */
-.px-desk.suggested { box-shadow: inset 0 0 0 4px #ffd84a; animation: px-suggest 0.8s steps(2) infinite; z-index: 4; }
+.px-desk.suggested { box-shadow: inset 0 0 0 4px #ffd84a; animation: px-suggest 0.8s steps(2) infinite; }
 @keyframes px-suggest {
   50% { box-shadow: inset 0 0 0 4px #ffd84a, 0 0 0 4px rgba(255, 216, 74, 0.6); }
 }

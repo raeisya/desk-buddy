@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { DeskPanel } from './components/DeskPanel'
 import { Legend } from './components/Legend'
 import { PixelOffice } from './components/PixelOffice'
-import { suggestSeat } from './components/seating'
+import { isFree, suggestSeat } from './components/seating'
 import { useFloor } from './hooks/useFloor'
 import { usePersona } from './persona/personaContext'
 import { PersonaSwitcher } from './persona/PersonaSwitcher'
@@ -20,15 +20,22 @@ export default function App() {
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null)
   // Look the desk up in the latest floor so the panel updates live when state changes.
   const selected = floor?.desks.find((d) => d.id === selectedId) ?? null
-  // A suggestion belongs to the persona who asked; switching persona hides it.
-  const activeSuggestion = suggestion && suggestion.personaId === persona?.id ? suggestion : null
+  // A suggestion belongs to the persona who asked (switching persona hides it), and a desk suggestion
+  // only stays up while that desk is still free — once anyone sits there, the note would be stale.
+  const suggestedDesk = suggestion?.deskId ? floor?.desks.find((d) => d.id === suggestion.deskId) : undefined
+  const activeSuggestion =
+    suggestion && suggestion.personaId === persona?.id && (suggestion.deskId === null || (suggestedDesk && isFree(suggestedDesk)))
+      ? suggestion
+      : null
 
   function findSeat() {
     if (!floor || !persona) return
     const result = suggestSeat(floor.desks, persona)
-    const deskId = result.ok ? result.desk.id : (result.deskId ?? null)
-    setSuggestion({ personaId: persona.id, deskId: result.ok ? deskId : null, note: result.note })
-    if (deskId) setSelectedId(deskId)
+    const suggestedId = result.ok ? result.desk.id : null
+    // Open the panel on the suggestion, or on the desk you're already at.
+    const focusId = suggestedId ?? (result.ok ? null : (result.deskId ?? null))
+    setSuggestion({ personaId: persona.id, deskId: suggestedId, note: result.note })
+    if (focusId) setSelectedId(focusId)
   }
 
   return (
