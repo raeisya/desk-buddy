@@ -147,6 +147,16 @@ const TEAMS = {
   },
 };
 
+// Slack member IDs of the demo accounts in our test workspace (not secrets; they only identify an account).
+// The Slack listener maps an incoming message to a person via users.slack_id.
+const SLACK_IDS = {
+  'u-hafiz': 'U0CGL2XK3HD',
+  'u-meiling': 'U0CHVR40NE4',
+  'u-alia': 'U0CGJGKR4BZ',
+  'u-shane': 'U0CH3K0HXV2',
+  'u-raeisya': 'U0CGTKZ981Z',
+};
+
 // ── Floor ────────────────────────────────────────────────────────────────────
 // Which team owns each seat, per pod: row 0 (5 seats) then row 1 (5 seats). '-' = unassigned hot desk.
 // Seats went first-come, so teams spill into each other's zones. Data is always split (Zone B + Zone E).
@@ -197,7 +207,7 @@ const queueByCode = {};
 for (const [team, t] of Object.entries(TEAMS)) {
   const holders = [];
   t.people.forEach(([id, name, role = 'staff'], i) => {
-    users.push({ id, name, email: `${id.slice(2)}@acme.example`, team, role, slackId: null });
+    users.push({ id, name, email: `${id.slice(2)}@acme.example`, team, role, slackId: SLACK_IDS[id] ?? null });
     if (i < t.desks) holders.push(id);
   });
   queueByCode[t.code] = holders;
@@ -229,6 +239,9 @@ ZONES.forEach((zone, z) => {
     });
   });
 });
+for (const id of Object.keys(SLACK_IDS)) {
+  if (!users.some((u) => u.id === id)) throw new Error(`SLACK_IDS: unknown user ${id}`);
+}
 for (const [code, left] of Object.entries(queueByCode)) {
   if (left.length) throw new Error(`Team ${code}: ${left.length} desk holders without a seat (${left.join(', ')})`);
 }
