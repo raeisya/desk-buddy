@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { api } from '../api/client'
 import type { FloorDesk, FloorResponse, UserSummary } from '../api/contracts'
 import { PixelOffice } from '../components/PixelOffice'
-import { MapCrop } from '../theme/Chrome'
+import { MapCrop, PageHeader } from '../theme/Chrome'
+import { floorDay } from '../theme/format'
 import { rankSeats, zonesOf } from '../theme/zones'
 import './screens.css'
 
@@ -43,7 +44,11 @@ export function FindSeat({ floor, persona, onChanged, onShowOnMap }: Props) {
   if (sitting) {
     return (
       <section className="tab-screen">
-        <h1 className="screen-title">You're sorted for today</h1>
+        <PageHeader
+          title="You're sorted for today"
+          meta={floorDay(floor)}
+          note="Your desk is held for today. Leave it if your plans change so someone else can sit."
+        />
         <div className="db-panel">
           <div className="db-panel__head">
             <h2 className="db-panel__title">Desk {sitting.id}</h2>
@@ -67,15 +72,18 @@ export function FindSeat({ floor, persona, onChanged, onShowOnMap }: Props) {
   if (!best) {
     return (
       <section className="tab-screen">
-        <h1 className="screen-title">No free desks right now</h1>
-        <p className="screen-lead">Desks free up when their owners post in Slack that they're out. This page updates live.</p>
+        <PageHeader
+          title="No free desks right now"
+          meta={floorDay(floor)}
+          note="Desks free up when their owners post in Slack that they're out. This page updates live."
+        />
       </section>
     )
   }
 
   return (
     <section className="tab-screen">
-      <h1 className="screen-title">Best seat for you</h1>
+      <PageHeader title="Best seat for you" meta={floorDay(floor)} note={`Free desks closest to the ${persona.team} team.`} />
       <div className="db-panel seat-card">
         {zone && (
           <MapCrop box={zone}>

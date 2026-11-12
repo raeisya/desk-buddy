@@ -1,4 +1,11 @@
-import type { ClockResponse, FloorResponse, PresenceStatus, UserSummary } from './contracts'
+import type {
+  ClockResponse,
+  FloorResponse,
+  HodHeatmapResponse,
+  HodTodayResponse,
+  PresenceStatus,
+  UserSummary,
+} from './contracts'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api${path}`, {
@@ -33,4 +40,7 @@ export const api = {
     request('/bookings', { method: 'POST', body: JSON.stringify({ deskId, userId }) }),
   releaseDesk: (deskId: string, userId: string) =>
     request('/bookings/release', { method: 'POST', body: JSON.stringify({ deskId, userId }) }),
+  // HOD dashboard (A's #9). Per-team counts may include reasons; the floor never does.
+  getHodToday: () => request<HodTodayResponse>('/hod/today'),
+  getHodHeatmap: () => request<HodHeatmapResponse>('/hod/heatmap'),
 }

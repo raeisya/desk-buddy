@@ -9,6 +9,7 @@ import { useFloor } from './hooks/useFloor'
 import { useWalkers } from './hooks/useWalkers'
 import { FindSeat } from './pages/FindSeat'
 import { Login } from './pages/Login'
+import { HodDashboard } from './hod/HodDashboard'
 import { Me } from './pages/Me'
 import { usePersona } from './persona/personaContext'
 import { AppNav, type AppTab } from './theme/AppNav'
@@ -74,6 +75,7 @@ export default function App() {
     )
   }
   if (!persona) return <Login />
+  const isHod = persona.role === 'hod'
 
   const header = (
     <TitleBlock
@@ -141,7 +143,8 @@ export default function App() {
           }}
         />
       )}
-      {tab === 'me' && floor && <Me floor={floor} persona={persona} onChanged={() => void reload()} />}
+      {tab === 'me' && floor && <Me floor={floor} persona={persona} onChanged={() => void reload()} onFindSeat={() => setTab('seat')} />}
+      {tab === 'team' && isHod && floor && <HodDashboard floor={floor} persona={persona} />}
     </>
   )
 
@@ -163,7 +166,7 @@ export default function App() {
             </>
           )}
         </main>
-        <AppNav tab={tab} onTab={setTab} placement="bottom" />
+        <AppNav tab={tab} onTab={setTab} placement="bottom" showTeam={isHod} />
       </div>
     )
   }
@@ -173,7 +176,7 @@ export default function App() {
     <div className="app app--desktop">
       {header}
       <div className="app-side">
-        <AppNav tab={tab} onTab={setTab} placement="side" />
+        <AppNav tab={tab} onTab={setTab} placement="side" showTeam={isHod} />
         {tab === 'map' && floor && panel}
       </div>
       <main>

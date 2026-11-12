@@ -73,6 +73,34 @@ export function TitleBlock({ floor, live, persona, onLogout }: TitleBlockProps) 
   )
 }
 
+interface PageHeaderProps {
+  title: string
+  /** Right side of the red band, e.g. the date. */
+  meta?: ReactNode
+  /** One line under the band. */
+  note?: ReactNode
+  /** Small label at the end of the note strip, e.g. "HOD only". */
+  chip?: string
+}
+
+/** Opening band for the tab pages (Find seat, Me, Team), matching the map's red frame header. */
+export function PageHeader({ title, meta, note, chip }: PageHeaderProps) {
+  return (
+    <header className="page-head">
+      <div className="page-head__band">
+        <h1 className="page-head__title">{title}</h1>
+        {meta && <span className="page-head__meta">{meta}</span>}
+      </div>
+      {(note || chip) && (
+        <div className="page-head__strip">
+          {note && <p>{note}</p>}
+          {chip && <span className="db-chip db-chip--red page-head__chip">{chip}</span>}
+        </div>
+      )}
+    </header>
+  )
+}
+
 /** Shows only one box of the map (map pixels), scaled to fill the width. Used for phone zone views. */
 export function MapCrop({ box, children }: { box: Pick<Zone, 'x' | 'y' | 'w' | 'h'>; children: ReactNode }) {
   return (
