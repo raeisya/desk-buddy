@@ -1,4 +1,6 @@
+import type { CSSProperties } from 'react'
 import type { FloorDesk } from '../api/contracts'
+import type { WalkerView } from '../hooks/useWalkers'
 import { CHARACTER_SHEET, frameStyle, seatPosition, variantFor } from '../theme/characters'
 import { DESK_STATE_STYLE } from './deskStyles'
 import { shortName } from './displayName'
@@ -9,6 +11,20 @@ const { width: MAP_W, height: MAP_H, src } = OFFICE_MAP
 const pct = (value: number, total: number) => `${(value / total) * 100}%`
 const SIT_FRAME = CHARACTER_SHEET.frames.sit[0]
 const NAME_DROP = 10 // map px: the sit frame has empty space above the head
+const { columns } = CHARACTER_SHEET
+const [TYPE_A, TYPE_B] = CHARACTER_SHEET.frames.type
+const colPct = (col: number) => `${(col / (columns - 1)) * 100}%`
+
+/** Seated people type: alternate the two type frames, out of step with each other. */
+function typingStyle(personId: string): CSSProperties {
+  let h = 0
+  for (let i = 0; i < personId.length; i++) h = (h * 31 + personId.charCodeAt(i)) | 0
+  return {
+    '--type-a': colPct(TYPE_A),
+    '--type-b': colPct(TYPE_B),
+    animationDelay: `-${(Math.abs(h) % 10) / 10}s`,
+  } as CSSProperties
+}
 
 interface Props {
   desks: FloorDesk[]
@@ -16,6 +32,10 @@ interface Props {
   youId?: string | null
   /** Desk picked by "Find me a seat": highlighted, with a "Sit here" bubble instead of "Away". */
   suggestedId?: string | null
+  /** People walking right now (arriving or leaving). */
+  walkers?: WalkerView[]
+  /** People whose seated sprite is hidden because they're walking. */
+  hiddenSeated?: Set<string>
   onSelect?: (desk: FloorDesk) => void
 }
 
@@ -24,7 +44,7 @@ interface Props {
  * sprites and "Away" bubbles. Everything is placed in map pixels (1280×768) as percentages, so the
  * whole office scales together.
  */
-export function PixelOffice({ desks, selectedId, youId, suggestedId, onSelect }: Props) {
+export function PixelOffice({ desks, selectedId, youId, suggestedId, walkers = [], hiddenSeated, onSelect }: Props) {
   if (desks.length === 0) return <p className="muted">No desks yet — check the seed data.</p>
 
   // Paint top-to-bottom so lower desks' people overlap the row above, not the other way round.
@@ -38,11 +58,13 @@ export function PixelOffice({ desks, selectedId, youId, suggestedId, onSelect }:
       aria-label="Office floor map"
     >
       {ordered.map((d) => {
-        const person = seatedPerson(d)
+        const seated = seatedPerson(d)
+        // Still walking in from the door: the desk is taken but the chair stays empty until they arrive.
+        const person = seated && !hiddenSeated?.has(seated.id) ? seated : null
         const label = DESK_STATE_STYLE[d.state].label
         const isYou = !!youId && (d.owner?.id === youId || d.occupant?.id === youId)
         const youSeatedHere = !!person && person.id === youId
-        const suggested = d.id === suggestedId && !person
+        const suggested = d.id === suggestedId && !seated
         const seat = seatPosition(d)
         return (
           <div key={d.id} className="px-desk-slot">
@@ -51,12 +73,12 @@ export function PixelOffice({ desks, selectedId, youId, suggestedId, onSelect }:
               className={`px-desk state-${d.state}${d.id === selectedId ? ' selected' : ''}${isYou ? ' is-you' : ''}${isYou && !person ? ' is-you-empty' : ''}${suggested ? ' suggested' : ''}`}
               style={{ left: pct(d.x, MAP_W), top: pct(d.y, MAP_H), width: pct(d.w, MAP_W), height: pct(d.h, MAP_H) }}
               onClick={() => onSelect?.(d)}
-              aria-label={`${d.id}, ${label}${person ? `, ${person.name}` : ''}${isYou ? ', your desk' : ''}`}
+              aria-label={`${d.id}, ${label}${seated ? `, ${seated.name}` : ''}${isYou ? ', your desk' : ''}`}
               title={`${d.id} · ${label}${d.owner ? ` · owner ${d.owner.name}` : ''}${d.occupant ? ` · today ${d.occupant.name}` : ''}`}
             />
             {person && (
               <div
-                className={`px-avatar${person.id === youId ? ' is-you' : ''}`}
+                className={`px-avatar typing${person.id === youId ? ' is-you' : ''}`}
                 aria-hidden="true"
                 style={{
                   left: pct(seat.x, MAP_W),
@@ -64,6 +86,7 @@ export function PixelOffice({ desks, selectedId, youId, suggestedId, onSelect }:
                   width: pct(CHARACTER_SHEET.frameWidth, MAP_W),
                   height: pct(CHARACTER_SHEET.frameHeight, MAP_H),
                   ...frameStyle(variantFor(person.id), d.facing, SIT_FRAME),
+                  ...typingStyle(person.id),
                 }}
               />
             )}
@@ -97,6 +120,28 @@ export function PixelOffice({ desks, selectedId, youId, suggestedId, onSelect }:
           </div>
         )
       })}
+      {[...walkers]
+        .sort((a, b) => a.y - b.y)
+        .map((w) => (
+          <div key={`walk-${w.personId}`} className="px-walker" aria-hidden="true">
+            <div
+              className={`px-avatar walking${w.personId === youId ? ' is-you' : ''}`}
+              style={{
+                left: pct(w.x, MAP_W),
+                top: pct(w.y, MAP_H),
+                width: pct(CHARACTER_SHEET.frameWidth, MAP_W),
+                height: pct(CHARACTER_SHEET.frameHeight, MAP_H),
+                ...frameStyle(variantFor(w.personId), w.dir, w.column),
+              }}
+            />
+            <span
+              className={`px-name facing-down${w.personId === youId ? ' is-you' : ''}`}
+              style={{ left: pct(w.x + CHARACTER_SHEET.frameWidth / 2, MAP_W), top: pct(w.y + NAME_DROP, MAP_H) }}
+            >
+              {w.personId === youId ? 'YOU' : shortName(w.name)}
+            </span>
+          </div>
+        ))}
     </div>
   )
 }

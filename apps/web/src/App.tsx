@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import type { FloorResponse } from './api/contracts'
 import { DeskPanel } from './components/DeskPanel'
 import { Legend } from './components/Legend'
 import { PixelOffice } from './components/PixelOffice'
 import { isFree, suggestSeat } from './components/seating'
+import { presenceWalks } from './components/walking'
 import { useFloor } from './hooks/useFloor'
+import { useWalkers } from './hooks/useWalkers'
 import { FindSeat } from './pages/FindSeat'
 import { Login } from './pages/Login'
 import { Me } from './pages/Me'
@@ -19,7 +22,17 @@ interface Suggestion {
 }
 
 export default function App() {
-  const { floor, error, live, reload } = useFloor()
+  const { walkers, hiddenSeated, start: startWalks, cancelAll: cancelWalks } = useWalkers()
+  // People who arrive walk in from the door, leavers walk out, desk-switchers walk across.
+  const onFloorChange = useCallback(
+    (prev: FloorResponse, next: FloorResponse) => {
+      const { walks, bulk } = presenceWalks(prev.desks, next.desks)
+      if (bulk) return cancelWalks()
+      startWalks(walks.map((w) => ({ personId: w.personId, name: w.name, walk: w.walk, hideSeated: w.direction === 'in' })))
+    },
+    [startWalks, cancelWalks],
+  )
+  const { floor, error, live, reload } = useFloor(onFloorChange)
   const { persona, users, setPersona } = usePersona()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null)
@@ -93,6 +106,8 @@ export default function App() {
           selectedId={selectedId}
           youId={persona.id}
           suggestedId={activeSuggestion?.deskId ?? null}
+          walkers={walkers}
+          hiddenSeated={hiddenSeated}
           onSelect={(d) => setSelectedId(d.id)}
         />
       </MapFrame>

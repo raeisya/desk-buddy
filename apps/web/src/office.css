@@ -129,3 +129,13 @@
 .find-seat { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 10px; }
 .find-seat p { margin: 0; font-size: 0.9rem; }
 .desk-actions .suggest-note { padding: 6px 8px; font-size: 0.8rem; background: #fff6cc; border: 2px solid #12141a; }
+
+/* Animation (B, phase 4): seated people type; walkers sit above everything seated. */
+.px-avatar.typing { animation: px-type 0.9s steps(1, end) infinite; }
+@keyframes px-type {
+  0% { background-position-x: var(--type-a); }
+  50% { background-position-x: var(--type-b); }
+}
+.px-avatar.walking { z-index: 6; }
+.px-walker .px-name { z-index: 7; }
+@media (prefers-reduced-motion: reduce) { .px-avatar.typing { animation: none; } }
