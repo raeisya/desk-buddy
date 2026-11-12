@@ -7,6 +7,7 @@ import { Desk, Presence, User } from '../entities';
 import desksJson from './data/desks.json';
 import presenceTodayJson from './data/presence-today.json';
 import usersJson from './data/users.json';
+import { generateHistory } from './history';
 
 /**
  * Stub seed (10 desks) so the frontend has something to render.
@@ -38,5 +39,13 @@ export class SeedService implements OnApplicationBootstrap {
       );
       this.log.log(`Seeded ${presenceTodayJson.length} presence rows for ${today}`);
     }
+
+    // 4 weeks of history for the HOD heatmap. ON CONFLICT DO NOTHING on (user_id, date):
+    // fills gaps only, never overwrites real (Slack/manual) rows, safe to run every boot.
+    const users = await this.users.find({ select: { id: true, role: true } });
+    const history = generateHistory(users, today).map((h) => ({ ...h, source: 'seed' as const }));
+    const result = await this.presence.createQueryBuilder().insert().values(history).orIgnore().execute();
+    const inserted = result.identifiers.filter(Boolean).length;
+    if (inserted) this.log.log(`Seeded ${inserted} presence history rows (past 20 weekdays)`);
   }
 }
