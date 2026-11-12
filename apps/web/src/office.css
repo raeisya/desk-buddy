@@ -1,0 +1,57 @@
+/* Pixel office (B). Uses the existing --desk-* tokens; C's theme can override them. */
+.workspace { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: start; }
+.workspace.with-panel { grid-template-columns: minmax(0, 1fr) 260px; }
+@media (max-width: 760px) { .workspace.with-panel { grid-template-columns: minmax(0, 1fr); } }
+
+.pixel-office {
+  position: relative;
+  width: 100%;
+  background-color: #2b2f3a;
+  /* placeholder floor grid until the real map image lands */
+  background-image: linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 20px 20px;
+  image-rendering: pixelated;
+  border: 4px solid #12141a;
+  container-type: inline-size; /* desk text scales with the map, not the viewport */
+}
+.pixel-office.has-image { background-size: 100% 100%; background-repeat: no-repeat; }
+
+.px-desk {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 2px 4px;
+  overflow: hidden;
+  font: 700 clamp(7px, 1.4cqw, 13px) / 1.1 ui-monospace, 'SF Mono', Menlo, monospace;
+  color: #12141a;
+  text-align: left;
+  cursor: pointer;
+  border: 2px solid #12141a;
+  border-radius: 0;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45); /* stepped, no blur: reads as pixel art */
+  transition: background-color 0.3s steps(4);
+}
+.px-desk:hover, .px-desk:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+.px-desk.selected { outline: 2px solid #ffd84a; outline-offset: 2px; }
+.px-desk-id { opacity: 0.8; }
+.px-desk-person { white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+
+.px-desk.state-occupied { background: var(--desk-occupied); }
+.px-desk.state-away { background: var(--desk-away); }
+.px-desk.state-hot-seated { background: var(--desk-hot); color: #fff; }
+.px-desk.state-available { background: var(--desk-available); animation: px-glow 1.2s steps(2) infinite; }
+.px-desk.state-unassigned { background: var(--desk-unassigned); animation: px-glow 1.2s steps(2) infinite; }
+@keyframes px-glow {
+  50% { box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45), 0 0 0 3px rgba(120, 255, 150, 0.7); }
+}
+@media (prefers-reduced-motion: reduce) { .px-desk { animation: none !important; } }
+
+.desk-panel { background: var(--card); border: 4px solid #12141a; padding: 12px; font-family: ui-monospace, 'SF Mono', Menlo, monospace; }
+.desk-panel header { display: flex; justify-content: space-between; align-items: center; }
+.desk-panel h2 { margin: 0; font-size: 1.1rem; }
+.desk-panel header button { font: inherit; cursor: pointer; border: 2px solid #12141a; background: transparent; }
+.desk-panel dt { color: var(--muted); font-size: 0.75rem; margin-top: 8px; }
+.desk-panel dd { margin: 0; }
