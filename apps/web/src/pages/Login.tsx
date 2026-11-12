@@ -1,14 +1,15 @@
 import { useState } from 'react'
+import { LangToggle, useLang } from '../i18n/lang'
 import { usePersona } from '../persona/personaContext'
 import { frameStyle, variantFor } from '../theme/characters'
 import './login.css'
 
 /** The demo journeys, in the order the pitch tells them. */
 const FEATURED = [
-  { id: 'u-alia', chip: 'HOD', chipClass: 'db-chip--red', blurb: "See who's in today and how the floor is used" },
-  { id: 'u-hafiz', chip: 'Staff', chipClass: 'db-chip--soft', blurb: 'Post "wfh today" in Slack and your desk frees itself' },
-  { id: 'u-aina', chip: 'New joiner', chipClass: 'db-chip--ok', blurb: 'Day one, no desk yet. Find a free seat near your team' },
-  { id: 'u-melissa', chip: 'Admin', chipClass: 'db-chip--soft', blurb: 'Manage staff: teams, roles, who has left' },
+  { id: 'u-alia', chip: 'roleHod', chipClass: 'db-chip--red', blurb: 'blurbHod' },
+  { id: 'u-hafiz', chip: 'roleStaff', chipClass: 'db-chip--soft', blurb: 'blurbStaff' },
+  { id: 'u-aina', chip: 'roleNewJoiner', chipClass: 'db-chip--ok', blurb: 'blurbNewJoiner' },
+  { id: 'u-melissa', chip: 'roleAdmin', chipClass: 'db-chip--soft', blurb: 'blurbAdmin' },
 ] as const
 
 /** Set once on load if the API sent us back with `#slack=error`; clears the hash. */
@@ -25,6 +26,7 @@ function readSlackError(): boolean {
 export function Login() {
   const { users, setPersona } = usePersona()
   const [slackFailed] = useState(readSlackError)
+  const { t } = useLang()
 
   const featured = FEATURED.flatMap((f) => {
     const user = users.find((u) => u.id === f.id)
@@ -36,13 +38,14 @@ export function Login() {
       <header className="login-brand">
         <span className="db-label">Acme Tech · Level 12</span>
         <h1 className="login-logo">DeskBuddy</h1>
-        <p className="login-tagline">Every empty desk, put to work.</p>
+        <p className="login-tagline">{t('tagline')}</p>
+        <LangToggle />
       </header>
 
       <section className="db-panel login-panel" aria-labelledby="login-title">
         <div className="db-panel__head">
-          <h2 id="login-title" className="db-panel__title">Who are you today?</h2>
-          <span className="db-panel__hint">Pick a demo persona</span>
+          <h2 id="login-title" className="db-panel__title">{t('loginTitle')}</h2>
+          <span className="db-panel__hint">{t('loginHint')}</span>
         </div>
 
         <div className="login-personas">
@@ -52,9 +55,9 @@ export function Login() {
               <span className="persona-text">
                 <span className="persona-name">{user.name}</span>
                 <span className={`db-chip ${chipClass}`}>
-                  {chip} · {user.team}
+                  {t(chip)} · {user.team}
                 </span>
-                <span className="persona-blurb">{blurb}</span>
+                <span className="persona-blurb">{t(blurb)}</span>
               </span>
             </button>
           ))}
@@ -63,22 +66,22 @@ export function Login() {
         <div className="login-alt">
         <div className="login-slack">
           <span id="slack-note" className="db-label" role="status">
-            {slackFailed ? 'Slack sign-in failed · pick a persona for now' : 'Or use your Slack account'}
+            {slackFailed ? t('slackFailed') : t('slackNote')}
           </span>
           <a href="/api/auth/slack" className="db-btn db-btn--plain" aria-describedby="slack-note">
             <svg width="20" height="20" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
               <rect x="2" y="2" width="14" height="14" />
               <path d="M6 9h6M9 6v6" />
             </svg>
-            Sign in with Slack
+            {t('slackButton')}
           </a>
         </div>
         </div>
       </section>
 
       <footer className="tb-footer login-footer">
-        <span>Demo personas · fictional company</span>
-        <span>Updated live from Slack</span>
+        <span>{t('footerLeft')}</span>
+        <span>{t('footerRight')}</span>
       </footer>
     </div>
   )
