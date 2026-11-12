@@ -36,6 +36,15 @@ docs/      Plan.
 | `apps/api/src/events/events.service.ts` | Call `emit()` after any write that changes the map → clients refetch live. |
 | `apps/api/src/seed/data/*.json` | Stub data. Person C replaces with the full fictional floor. |
 
+## Art, fonts and data
+
+- **All art is original**, drawn by our own scripts. There are no third-party assets, so there are no licences to track:
+  - `scripts/generate-map-art.py` → `apps/web/public/office-map.png` (from `desks.json`)
+  - `scripts/generate-characters.py` → `apps/web/public/sprites/characters.png`
+- **Fonts** (all SIL Open Font License, bundled via `@fontsource`, no runtime Google Fonts): Silkscreen, IBM Plex Sans, IBM Plex Mono.
+- **People and company are fictional** ("Acme Tech"), except the three team members, who appear by first name with consent. Emails are `@acme.example`.
+- Regenerate the floor: `node scripts/generate-floor.mjs && python3 scripts/generate-map-art.py && python3 scripts/generate-characters.py`
+
 ## API
 
 | Method | Path | Notes |

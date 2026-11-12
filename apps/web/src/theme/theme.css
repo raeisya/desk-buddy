@@ -1,0 +1,190 @@
+/*
+ * Redline theme (C). Red ink on drawing paper: the markup layer of an engineering drawing.
+ * Loaded after index.css + office.css, so it re-skins B's components without touching their files.
+ *
+ * Type rules: the pixel font (Silkscreen) only at 18px+, for the logo and panel titles.
+ * Buttons and anything people read: IBM Plex Sans; labels: IBM Plex Mono. Nothing below 13px.
+ * Red = action + structure. Desk states live on the map, never on buttons.
+ */
+
+:root {
+  /* palette */
+  --rl-paper: #faf6f2;
+  --rl-card: #ffffff;
+  --rl-red: #c8322b;
+  --rl-red-dark: #8f1d17;
+  --rl-red-tint: #f3d6d3;
+  --rl-line-soft: #e2b4ae;
+  --rl-ink: #1f1a1a;
+  --rl-ink-2: #4a3f3d;
+  --rl-muted: #6b5e5c;
+  --rl-on-red: #ffffff;
+  --rl-on-red-muted: #ffe3df;
+  --rl-ok: #1e7b3a;
+  --rl-ok-tint: #c9f0d3;
+  --rl-ok-ink: #14532d;
+
+  /* type */
+  --font-display: 'Silkscreen', ui-monospace, monospace;
+  --font-button: var(--font-body); /* not Pixelify: its C reads as O at button size */
+  --font-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-label: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+
+  /* B's shared tokens, remapped */
+  --bg: var(--rl-paper);
+  --fg: var(--rl-ink);
+  --muted: var(--rl-muted);
+  --card: var(--rl-card);
+  --border: var(--rl-line-soft);
+  --error: #b3261e;
+  --desk-away: #f08a3c; /* orange, not amber: never confused with an action colour */
+
+  font-family: var(--font-body);
+  font-size: 16px;
+  color-scheme: light;
+}
+
+body {
+  background-color: var(--rl-paper);
+  /* drawing-paper grid: 80px major, 16px minor */
+  background-image:
+    linear-gradient(rgba(200, 50, 43, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(200, 50, 43, 0.09) 1px, transparent 1px),
+    linear-gradient(rgba(200, 50, 43, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(200, 50, 43, 0.04) 1px, transparent 1px);
+  background-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px;
+  color: var(--rl-ink);
+  font-family: var(--font-body);
+  line-height: 1.45;
+}
+
+:focus-visible { outline: 3px solid var(--rl-ink); outline-offset: 2px; }
+
+/* ── Top bar = drawing title block ─────────────────────────────────────── */
+.topbar {
+  align-items: stretch;
+  gap: 0;
+  margin-bottom: 16px;
+  border: 2px solid var(--rl-red);
+  background: var(--rl-card);
+}
+.topbar > * { display: flex; align-items: center; padding: 10px 16px; }
+.topbar h1 {
+  margin: 0;
+  padding: 12px 20px;
+  background: var(--rl-red);
+  color: var(--rl-on-red);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 28px;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.topbar .muted { font-family: var(--font-label); font-size: 14px; color: var(--rl-muted); border-right: 1px solid var(--rl-line-soft); }
+.topbar .live {
+  margin: 8px 12px 8px auto;
+  padding: 4px 10px;
+  font-family: var(--font-label);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--rl-muted);
+  border: 2px solid currentColor;
+}
+.topbar .live.on { color: var(--rl-ok); }
+
+/* persona switcher (B's stand-in for the login page) */
+.persona-switcher { gap: 10px; font-size: 15px; border-right: 1px solid var(--rl-line-soft); }
+.persona-switcher .muted { border: 0; padding: 0; font-family: var(--font-label); font-size: 13px; text-transform: uppercase; }
+.persona-switcher select {
+  height: 40px;
+  padding: 0 10px;
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--rl-ink);
+  background: var(--rl-card);
+  border: 2px solid var(--rl-ink);
+  border-radius: 0;
+}
+
+/* ── Legend ────────────────────────────────────────────────────────────── */
+.legend { gap: 10px 24px; font-size: 15px; margin-bottom: 14px; }
+.legend li { gap: 8px; }
+.swatch { width: 18px; height: 18px; border-radius: 0; border: 2px solid var(--rl-ink); }
+
+/* ── Map frame ─────────────────────────────────────────────────────────── */
+.pixel-office { border: 2px solid var(--rl-red); box-shadow: 4px 4px 0 var(--rl-ink); }
+.px-desk.selected { outline: 3px solid var(--rl-red); outline-offset: -3px; }
+
+/* ── Desk panel = red-banded drawing panel ─────────────────────────────── */
+.desk-panel {
+  padding: 0;
+  font-family: var(--font-body);
+  background: var(--rl-card);
+  border: 2px solid var(--rl-red);
+  box-shadow: 4px 4px 0 var(--rl-ink);
+}
+.workspace .desk-panel { flex-basis: 320px; }
+.desk-panel header { padding: 10px 14px; background: var(--rl-red); color: var(--rl-on-red); }
+.desk-panel h2 { font-family: var(--font-display); font-weight: 400; font-size: 22px; }
+.desk-panel header button {
+  width: 36px;
+  height: 36px;
+  font-family: var(--font-body);
+  font-size: 20px;
+  color: var(--rl-on-red);
+  border: 2px solid var(--rl-on-red);
+  background: transparent;
+}
+.desk-panel dl { margin: 0; padding: 6px 14px 14px; }
+.desk-panel dt { margin-top: 12px; font-family: var(--font-label); font-size: 13px; text-transform: uppercase; color: var(--rl-muted); }
+.desk-panel dd { font-size: 17px; }
+
+/* ── Building blocks for new screens (login, HOD dashboard) ────────────── */
+.db-panel { background: var(--rl-card); border: 2px solid var(--rl-red); box-shadow: 4px 4px 0 var(--rl-ink); }
+.db-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--rl-red);
+  color: var(--rl-on-red);
+}
+.db-panel__title { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 22px; text-transform: uppercase; }
+.db-panel__hint { font-size: 15px; color: var(--rl-on-red-muted); }
+.db-panel__body { padding: 16px; }
+
+.db-label { font-family: var(--font-label); font-size: 13px; text-transform: uppercase; letter-spacing: 0.02em; color: var(--rl-muted); }
+
+.db-btn {
+  min-height: 48px;
+  padding: 0 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: var(--font-button);
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--rl-on-red);
+  background: var(--rl-red);
+  border: 2px solid var(--rl-ink);
+  border-radius: 0;
+  box-shadow: 3px 3px 0 var(--rl-ink);
+  cursor: pointer;
+  transition: transform 0.1s steps(2), box-shadow 0.1s steps(2);
+}
+.db-btn:hover { background: var(--rl-red-dark); }
+.db-btn:active { transform: translate(3px, 3px); box-shadow: none; }
+.db-btn--secondary { color: var(--rl-red); background: var(--rl-card); border-color: var(--rl-red); box-shadow: none; }
+.db-btn--secondary:hover { background: var(--rl-red-tint); }
+.db-btn--plain { color: var(--rl-ink); background: var(--rl-card); }
+.db-btn--plain:hover { background: var(--rl-paper); }
+.db-btn:disabled { color: var(--rl-muted); background: transparent; border: 2px dashed var(--rl-line-soft); box-shadow: none; cursor: not-allowed; }
+
+.db-chip { display: inline-block; padding: 3px 10px; font-family: var(--font-label); font-size: 14px; font-weight: 600; }
+.db-chip--red { color: var(--rl-on-red); background: var(--rl-red); }
+.db-chip--soft { color: var(--rl-ink); background: var(--rl-red-tint); }
+.db-chip--ok { color: var(--rl-ok-ink); background: var(--rl-ok-tint); }
+
+@media (prefers-reduced-motion: reduce) { .db-btn { transition: none; } }
