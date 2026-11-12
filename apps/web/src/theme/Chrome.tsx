@@ -30,6 +30,8 @@ interface TitleBlockProps {
 /** Page header styled as an engineering drawing's title block. */
 export function TitleBlock({ floor, live, persona, onLogout }: TitleBlockProps) {
   const now = floor ? new Date(floor.now) : null
+  // Live: goes up when someone takes a desk, down when a Slack post frees one.
+  const inUse = floor ? floor.desks.length - floor.desks.filter(isFree).length : 0
   return (
     <header className="tb">
       <div className="tb-brand">
@@ -38,8 +40,8 @@ export function TitleBlock({ floor, live, persona, onLogout }: TitleBlockProps) 
       </div>
       <dl className="tb-cells">
         <div>
-          <dt className="db-label">Dwg no.</dt>
-          <dd>DB-001</dd>
+          <dt className="db-label">Desks in use</dt>
+          <dd>{floor ? `${inUse} / ${floor.desks.length}` : '…'}</dd>
         </div>
         <div>
           <dt className="db-label">Project</dt>

@@ -285,7 +285,7 @@ body {
 /* Small laptops: narrower left column; header cells may wrap instead of overlapping */
 @media (max-width: 1200px) {
   .app--desktop { grid-template-columns: 260px minmax(0, 1fr); column-gap: 14px; }
-  .tb-cells > div:first-child { display: none; } /* drawing number: decoration, first to go */
+  .tb-cells > div:nth-child(2) { display: none; } /* project name: static, first to go */
   .tb-cells { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tb-cells dd { white-space: normal; font-size: 16px; }
 }
