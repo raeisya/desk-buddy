@@ -18,7 +18,7 @@ export function PixelOffice({ desks, selectedId, onSelect }: Props) {
   return (
     <div
       className={`pixel-office${src ? ' has-image' : ''}`}
-      style={{ aspectRatio: `${width} / ${height}`, backgroundImage: src ? `url(${src})` : undefined }}
+      style={{ aspectRatio: `${width} / ${height}`, backgroundImage: src ? `url("${src}")` : undefined }}
       role="group"
       aria-label="Office floor map"
     >
@@ -33,7 +33,7 @@ export function PixelOffice({ desks, selectedId, onSelect }: Props) {
             style={{ left: pct(d.x, width), top: pct(d.y, height), width: pct(d.w, width), height: pct(d.h, height) }}
             onClick={() => onSelect?.(d)}
             aria-label={`${d.id}, ${label}${person ? `, ${person.name}` : ''}`}
-            title={`${d.id} · ${label}`}
+            title={`${d.id} · ${label}${d.owner ? ` · owner ${d.owner.name}` : ''}${d.occupant ? ` · today ${d.occupant.name}` : ''}`}
           >
             <span className="px-desk-id">{d.id}</span>
             <span className="px-desk-person">{person ? person.name.split(' ')[0] : '—'}</span>
