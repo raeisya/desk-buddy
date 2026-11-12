@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import type { FloorDesk, FloorResponse, UserSummary } from '../api/contracts'
+import { shortName } from '../components/displayName'
 import { frameStyle, variantFor } from './characters'
 import { useNarrow } from './useNarrow'
 import { homeZoneFor, isFree, MAP_H, MAP_W, zonesOf, type Zone } from './zones'
@@ -184,7 +185,7 @@ export function MapFrame({ floor, users, legend, homeTeam, onSelectDesk, childre
                 <span>
                   <strong>{d.id}</strong>
                   <span className="zone-free__sub">
-                    {d.owner ? `${d.owner.name.split(' ')[0]}'s desk · away today` : 'Hot desk'}
+                    {d.owner ? `${shortName(d.owner.name)}'s desk · away today` : 'Hot desk'}
                   </span>
                 </span>
                 <span className="zone-free__go">View ▶</span>

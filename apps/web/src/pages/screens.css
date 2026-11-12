@@ -9,6 +9,9 @@
 .screen-desk { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 22px; text-transform: uppercase; }
 .screen-lead { font-size: 17px; line-height: 1.45; }
 .screen-cta { min-height: 56px; font-size: 20px; }
+.seat-maplink { align-self: center; padding: 4px 8px; font: inherit; font-size: 15px; font-weight: 600; color: var(--rl-red); background: none; border: 0; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.zone-free__item--on { border-color: var(--rl-red) !important; background: var(--rl-red-tint) !important; }
+.zone-free__item--on .zone-free__go { color: var(--rl-red); background: transparent; border-color: transparent; }
 .tab-screen .zone-viewport { margin: 0; border: 0; border-bottom: 2px solid var(--rl-red); }
 
 
