@@ -101,7 +101,7 @@ select:disabled { cursor: not-allowed; opacity: 0.6; }
 .tb-tagline { font-size: 15px; color: var(--rl-on-red-muted); }
 .tb-cells { margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .tb-cells > div { padding: 10px 18px; display: flex; flex-direction: column; justify-content: center; gap: 4px; border-right: 1px solid var(--rl-line-soft); }
-.tb-cells dd { margin: 0; font-size: 18px; font-weight: 600; white-space: nowrap; }
+.tb-cells dd { margin: 0; font-size: 18px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* clip, never run into the next cell */
 .tb-who { display: flex; align-items: center; gap: 14px; padding: 8px 20px; }
 .tb-sprite { width: 32px; height: 48px; flex-shrink: 0; }
 .tb-live { padding: 5px 10px; font-family: var(--font-label); font-size: 14px; font-weight: 600; color: var(--rl-muted); border: 2px solid currentColor; white-space: nowrap; }
@@ -310,6 +310,12 @@ select:disabled { cursor: not-allowed; opacity: 0.6; }
 /* The map fills the right side, capped by screen height so the whole floor stays in view. */
 .app--desktop .map-wrap { max-width: min(1280px, calc((100dvh - 330px) * 5 / 3)); } /* room for header, find-seat bar, legend, footer */
 
+/* The EN|BM toggle takes room from the title cells: drop the static project name earlier, let the date wrap */
+@media (max-width: 1500px) {
+  .tb-cells > div:nth-child(2) { display: none; }
+  .tb-cells { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tb-cells dd { white-space: normal; }
+}
 /* Small laptops: narrower left column; header cells may wrap instead of overlapping */
 @media (max-width: 1200px) {
   .app--desktop { grid-template-columns: 260px minmax(0, 1fr); column-gap: 14px; }
@@ -444,3 +450,20 @@ select:disabled { cursor: not-allowed; opacity: 0.6; }
 .db-chip--ok { color: var(--rl-ok-ink); background: var(--rl-ok-tint); }
 
 @media (prefers-reduced-motion: reduce) { .db-btn { transition: none; } }
+
+/* EN | BM toggle (login page + title block) */
+.lang-toggle { display: inline-flex; border: 2px solid var(--rl-ink); flex-shrink: 0; }
+.lang-toggle button {
+  min-width: 40px;
+  min-height: 32px;
+  padding: 0 8px;
+  font-family: var(--font-label);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--rl-ink);
+  background: var(--rl-card);
+  border: 0;
+  cursor: pointer;
+}
+.lang-toggle button + button { border-left: 2px solid var(--rl-ink); }
+.lang-toggle button.on { color: var(--rl-on-red); background: var(--rl-red); }

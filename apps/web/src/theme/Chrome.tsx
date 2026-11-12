@@ -1,6 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import type { FloorDesk, FloorResponse, UserSummary } from '../api/contracts'
 import { shortName } from '../components/displayName'
+import { LangToggle, useLang, type StringKey } from '../i18n/lang'
 import { frameStyle, variantFor } from './characters'
 import { useNarrow } from './useNarrow'
 import { homeZoneFor, isFree, MAP_H, MAP_W, zonesOf, type Zone } from './zones'
@@ -15,9 +16,8 @@ const fmtDay = new Intl.DateTimeFormat('en-GB', { timeZone: TZ, weekday: 'short'
 const fmtTime = new Intl.DateTimeFormat('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hour12: false })
 
 /** Role shown under the signed-in name. Aina is the demo's new joiner (no desk yet). */
-function personaTag(user: UserSummary): string {
-  const role = user.id === 'u-aina' ? 'New joiner' : user.role === 'hod' ? 'HOD' : user.role === 'admin' ? 'Admin' : 'Staff'
-  return `${role} · ${user.team}`
+function personaRole(user: UserSummary): StringKey {
+  return user.id === 'u-aina' ? 'roleNewJoiner' : user.role === 'hod' ? 'roleHod' : user.role === 'admin' ? 'roleAdmin' : 'roleStaff'
 }
 
 interface TitleBlockProps {
@@ -33,24 +33,25 @@ export function TitleBlock({ floor, live, persona, onLogout }: TitleBlockProps) 
   const now = floor ? new Date(floor.now) : null
   // Live: goes up when someone takes a desk, down when a Slack post frees one.
   const inUse = floor ? floor.desks.length - floor.desks.filter(isFree).length : 0
+  const { t } = useLang()
   return (
     <header className="tb">
       <div className="tb-brand">
         <span className="tb-logo">DeskBuddy</span>
-        <span className="tb-tagline">Every empty desk, put to work.</span>
+        <span className="tb-tagline">{t('tagline')}</span>
       </div>
       <dl className="tb-cells">
         <div>
-          <dt className="db-label">Desks in use</dt>
+          <dt className="db-label">{t('desksInUse')}</dt>
           <dd>{floor ? `${inUse} / ${floor.desks.length}` : '…'}</dd>
         </div>
         <div>
-          <dt className="db-label">Project</dt>
+          <dt className="db-label">{t('project')}</dt>
           <dd>Acme Tech · Level 12</dd>
         </div>
         <div>
-          <dt className="db-label">Today</dt>
-          <dd>{now ? `${fmtDay.format(now)} · ${fmtTime.format(now)}` : 'Loading…'}</dd>
+          <dt className="db-label">{t('today')}</dt>
+          <dd>{now ? `${fmtDay.format(now)} · ${fmtTime.format(now)}` : t('loading')}</dd>
         </div>
       </dl>
       <div className="tb-who">
@@ -59,14 +60,15 @@ export function TitleBlock({ floor, live, persona, onLogout }: TitleBlockProps) 
             <span className="tb-sprite" style={frameStyle(variantFor(persona.id), 'down', 0)} aria-hidden="true" />
             <div className="tb-who-text">
               <span className="tb-who-name">{persona.name}</span>
-              <span className="tb-who-role">{personaTag(persona)}</span>
+              <span className="tb-who-role">{t(personaRole(persona))} · {persona.team}</span>
             </div>
           </>
         )}
-        <span className={`tb-live${live ? ' on' : ''}`}>{live ? '● Live' : '○ Offline'}</span>
+        <span className={`tb-live${live ? ' on' : ''}`}>{live ? t('live') : t('offline')}</span>
+        <LangToggle />
         {onLogout && (
           <button type="button" className="db-btn db-btn--secondary tb-logout" onClick={onLogout}>
-            Log out
+            {t('logout')}
           </button>
         )}
       </div>
