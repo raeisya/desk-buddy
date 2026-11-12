@@ -1,6 +1,7 @@
-import type { ReactNode } from 'react'
-import type { FloorResponse, UserSummary } from '../api/contracts'
+import { useMemo, useState, type ReactNode } from 'react'
+import type { FloorDesk, FloorResponse, UserSummary } from '../api/contracts'
 import { frameStyle, variantFor } from './characters'
+import { useNarrow } from './useNarrow'
 
 /*
  * Redline "drawing" chrome (C): title block, framed map, side-panel hint, footer.
@@ -69,18 +70,73 @@ export function TitleBlock({ floor, live, persona, onLogout }: TitleBlockProps) 
   )
 }
 
+const MAP_W = 1280
+const MAP_H = 768
+const isFree = (d: FloorDesk) => d.state === 'available' || d.state === 'unassigned'
+
+interface Zone {
+  name: string
+  /** Crop box in map pixels, padded so name tags above/below the pod stay visible. */
+  x: number
+  y: number
+  w: number
+  h: number
+  desks: FloorDesk[]
+}
+
+function zonesOf(desks: FloorDesk[]): Zone[] {
+  const byName = new Map<string, FloorDesk[]>()
+  for (const d of desks) byName.set(d.zone, [...(byName.get(d.zone) ?? []), d])
+  return [...byName].map(([name, ds]) => {
+    const x0 = Math.max(0, Math.min(...ds.map((d) => d.x)) - 24)
+    const y0 = Math.max(0, Math.min(...ds.map((d) => d.y)) - 40)
+    const x1 = Math.min(MAP_W, Math.max(...ds.map((d) => d.x + d.w)) + 24)
+    const y1 = Math.min(MAP_H, Math.max(...ds.map((d) => d.y + d.h)) + 40)
+    return { name, x: x0, y: y0, w: x1 - x0, h: y1 - y0, desks: ds }
+  })
+}
+
+/** The zone where most of this team's desks are (the persona's "home" on the floor). */
+function homeZoneFor(zones: Zone[], team: string | undefined): string | undefined {
+  if (!team) return undefined
+  let best: Zone | undefined
+  let bestCount = 0
+  for (const z of zones) {
+    const n = z.desks.filter((d) => d.owner?.team === team).length
+    if (n > bestCount) [best, bestCount] = [z, n]
+  }
+  return best?.name
+}
+
 interface MapFrameProps {
   floor: FloorResponse
   users: UserSummary[]
   legend?: ReactNode
+  /** Phone view: start on this team's zone. */
+  homeTeam?: string
+  /** Phone view: tapping a desk in the "free here" list. */
+  onSelectDesk?: (desk: FloorDesk) => void
   children: ReactNode
 }
 
-/** The map inside a red-banded drawing frame, with live counts and the legend. */
-export function MapFrame({ floor, users, legend, children }: MapFrameProps) {
-  const free = floor.desks.filter((d) => d.state === 'available' || d.state === 'unassigned').length
+/**
+ * The map inside a red-banded drawing frame, with live counts and the legend.
+ * On a phone the full floor is unreadable, so it shows one zone at a time (picker laid out like
+ * the floor) plus a tappable list of that zone's free desks.
+ */
+export function MapFrame({ floor, users, legend, homeTeam, onSelectDesk, children }: MapFrameProps) {
+  const narrow = useNarrow()
+  const zones = useMemo(() => zonesOf(floor.desks), [floor.desks])
+  // Floor order: top row left→right, then the next row.
+  const ordered = useMemo(() => [...zones].sort((a, b) => a.y - b.y || a.x - b.x), [zones])
+  const [picked, setPicked] = useState<string | null>(null)
+  const zone = ordered.find((z) => z.name === (picked ?? homeZoneFor(zones, homeTeam))) ?? ordered[0]
+
+  const free = floor.desks.filter(isFree).length
   const owners = new Set(floor.desks.flatMap((d) => (d.owner ? [d.owner.id] : [])))
   const noDesk = users.length > 0 ? users.filter((u) => !owners.has(u.id)).length : null
+  const freeHere = zone ? zone.desks.filter(isFree).sort((a, b) => a.id.localeCompare(b.id)) : []
+
   return (
     <section className="db-panel mapframe" aria-label="Floor plan">
       <div className="db-panel__head">
@@ -90,8 +146,60 @@ export function MapFrame({ floor, users, legend, children }: MapFrameProps) {
           {noDesk !== null && ` · ${noDesk} staff without a desk`}
         </span>
       </div>
-      <div className="mapframe-body">{children}</div>
-      {legend && <div className="mapframe-legend">{legend}</div>}
+
+      {narrow && zone ? (
+        <>
+          <nav className="zone-picker" aria-label="Zones, laid out like the floor">
+            {ordered.map((z) => {
+              const n = z.desks.filter(isFree).length
+              return (
+                <button
+                  key={z.name}
+                  type="button"
+                  className={`zone-tile${z.name === zone.name ? ' on' : ''}`}
+                  aria-pressed={z.name === zone.name}
+                  onClick={() => setPicked(z.name)}
+                >
+                  <span className="zone-tile__name">{z.name}</span>
+                  <span className="zone-tile__free">{n} free</span>
+                </button>
+              )
+            })}
+          </nav>
+          <div className="zone-viewport" style={{ aspectRatio: `${zone.w} / ${zone.h}` }}>
+            <div
+              className="zone-stage"
+              style={{
+                width: `${(MAP_W / zone.w) * 100}%`,
+                transform: `translate(${(-zone.x / MAP_W) * 100}%, ${(-zone.y / MAP_H) * 100}%)`,
+              }}
+            >
+              {children}
+            </div>
+          </div>
+          {legend && <div className="mapframe-legend">{legend}</div>}
+          <div className="zone-free">
+            <h3 className="db-label">Free in {zone.name}</h3>
+            {freeHere.length === 0 && <p className="muted">No free desks here right now. Try another zone.</p>}
+            {freeHere.map((d) => (
+              <button key={d.id} type="button" className="zone-free__item" onClick={() => onSelectDesk?.(d)}>
+                <span>
+                  <strong>{d.id}</strong>
+                  <span className="zone-free__sub">
+                    {d.owner ? `${d.owner.name.split(' ')[0]}'s desk · away today` : 'Hot desk'}
+                  </span>
+                </span>
+                <span className="zone-free__go">View ▶</span>
+              </button>
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="mapframe-body">{children}</div>
+          {legend && <div className="mapframe-legend">{legend}</div>}
+        </>
+      )}
     </section>
   )
 }

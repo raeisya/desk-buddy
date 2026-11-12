@@ -180,18 +180,76 @@ body {
 .px-button.primary:hover:not(:disabled) { background: var(--rl-red-dark); }
 .px-button:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: none; }
 
-/* ── Phone width: stack everything ─────────────────────────────────────── */
+/* ── Phone zone view (rendered by MapFrame only on narrow screens) ─────── */
+.zone-picker { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 10px; }
+.zone-tile {
+  min-height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-family: var(--font-body);
+  color: var(--rl-ink);
+  background: var(--rl-paper);
+  border: 2px solid var(--rl-line-soft);
+  border-radius: 0;
+  cursor: pointer;
+}
+.zone-tile__name { font-family: var(--font-display); font-size: 15px; text-transform: uppercase; }
+.zone-tile__free { font-size: 13px; font-weight: 600; color: var(--rl-ok); }
+.zone-tile.on { color: var(--rl-on-red); background: var(--rl-red); border-color: var(--rl-ink); }
+.zone-tile.on .zone-tile__free { color: var(--rl-on-red); }
+
+.zone-viewport { position: relative; overflow: hidden; margin: 0 10px 10px; border: 2px solid var(--rl-red); }
+.zone-stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+
+.zone-free { display: flex; flex-direction: column; gap: 8px; padding: 0 10px 12px; }
+.zone-free h3 { margin: 4px 0 0; }
+.zone-free p { margin: 0; font-size: 15px; }
+.zone-free__item {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 12px;
+  font-family: var(--font-body);
+  font-size: 17px;
+  text-align: left;
+  color: var(--rl-ink);
+  background: var(--rl-card);
+  border: 2px solid var(--rl-ink);
+  border-radius: 0;
+  cursor: pointer;
+}
+.zone-free__item > span:first-child { display: flex; flex-direction: column; }
+.zone-free__sub { font-size: 14px; color: var(--rl-muted); }
+.zone-free__go { padding: 6px 12px; font-weight: 600; font-size: 16px; color: var(--rl-on-red); background: var(--rl-red); border: 2px solid var(--rl-ink); white-space: nowrap; }
+
+/* ── Phone width: compact header, stacked layout ───────────────────────── */
 @media (max-width: 760px) {
-  .app { padding: 12px; }
-  .tb { grid-template-columns: minmax(0, 1fr); }
-  .tb-cells { grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--rl-line-soft); }
-  .tb-cells > div { padding: 8px 10px; }
-  .tb-cells dd { font-size: 15px; white-space: normal; }
-  .tb-who { border-top: 1px solid var(--rl-line-soft); padding: 8px 12px; }
-  .tb-live { margin-left: auto; }
+  .app { padding: 10px; gap: 12px; }
+  .tb { grid-template-columns: minmax(0, 1fr); box-shadow: 3px 3px 0 var(--rl-ink); }
+  .tb-brand { flex-direction: row; align-items: center; justify-content: space-between; padding: 10px 14px; }
+  .tb-logo { font-size: 22px; }
+  .tb-tagline { display: none; }
+  .tb-cells { display: none; } /* drawing number / project / date: desktop only */
+  .tb-who { flex-wrap: wrap; gap: 10px; padding: 8px 12px; }
+  .tb-who-text { flex: 1; min-width: 0; }
+  .tb-who-name { font-size: 17px; overflow: hidden; text-overflow: ellipsis; }
+  .tb-who-role { white-space: normal; font-size: 13px; }
+  .tb-live { font-size: 13px; padding: 4px 8px; }
+  .tb-logout { min-height: 40px; }
+  .mapframe .db-panel__head { padding: 10px 12px; }
+  .mapframe .db-panel__title { font-size: 20px; }
+  .mapframe .db-panel__hint { font-size: 14px; }
+  .mapframe-legend { padding: 0 10px 10px; }
+  .mapframe-legend .legend { gap: 6px 14px; font-size: 14px; }
   .map-wrap { max-width: none; }
-  .workspace .desk-panel,
-  .workspace .panel-hint { flex-basis: auto; }
+  .workspace .desk-panel { flex-basis: auto; }
+  .workspace .panel-hint { display: none; } /* the "free here" list does this job on a phone */
+  .tb-footer { display: none; }
 }
 
 /* ── Building blocks for new screens (login, HOD dashboard) ────────────── */

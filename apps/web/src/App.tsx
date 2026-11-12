@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { DeskPanel } from './components/DeskPanel'
 import { Legend } from './components/Legend'
 import { PixelOffice } from './components/PixelOffice'
@@ -6,6 +6,7 @@ import { useFloor } from './hooks/useFloor'
 import { Login } from './pages/Login'
 import { usePersona } from './persona/personaContext'
 import { DrawingFooter, MapFrame, PanelHint, TitleBlock } from './theme/Chrome'
+import { useNarrow } from './theme/useNarrow'
 
 export default function App() {
   const { floor, error, live, reload } = useFloor()
@@ -13,6 +14,12 @@ export default function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   // Look the desk up in the latest floor so the panel updates live when state changes.
   const selected = floor?.desks.find((d) => d.id === selectedId) ?? null
+  const narrow = useNarrow()
+
+  // Phone: the desk panel sits below the map, so bring it into view when a desk is picked.
+  useEffect(() => {
+    if (narrow && selectedId) document.querySelector('.desk-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [narrow, selectedId])
 
   // Users load async; until then a saved persona can't resolve, so don't flash the login page.
   if (users.length === 0) {
@@ -41,7 +48,13 @@ export default function App() {
         {floor && (
           <div className="workspace">
             <div className="map-wrap">
-              <MapFrame floor={floor} users={users} legend={<Legend />}>
+              <MapFrame
+                floor={floor}
+                users={users}
+                legend={<Legend />}
+                homeTeam={persona.team}
+                onSelectDesk={(d) => setSelectedId(d.id)}
+              >
                 <PixelOffice
                   desks={floor.desks}
                   selectedId={selectedId}
