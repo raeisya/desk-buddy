@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { api } from '../api/client'
-import type { AvatarConfig, UserSummary } from '../api/contracts'
+import { PANTS_COLOURS, SKIN_TONES, type AvatarConfig, type UserSummary } from '../api/contracts'
 import { variantFor } from '../theme/characters'
 import {
   avatarFrameStyle,
@@ -9,16 +9,14 @@ import {
   PANTS,
   PRESET_AVATARS,
   rememberSaved,
+  rgbToHex,
   savedLookOf,
   SKINS,
   type HairStyle,
   type PantsColour,
-  type RGB,
   type SkinTone,
 } from './characterArt'
 import './avatarPicker.css'
-
-const hex = (c: RGB) => `#${c.map((v) => v.toString(16).padStart(2, '0')).join('')}`
 
 const STYLES: { id: HairStyle; label: string }[] = [
   { id: 'short', label: 'Short hair' },
@@ -144,7 +142,7 @@ export function AvatarPicker({ persona, onSaved }: Props) {
             />
             <Swatches
               legend="Skin"
-              options={(Object.keys(SKINS) as SkinTone[]).map((k) => ({ id: k, name: SKIN_NAMES[k], colour: hex(SKINS[k]) }))}
+              options={SKIN_TONES.map((k) => ({ id: k, name: SKIN_NAMES[k], colour: rgbToHex(SKINS[k]) })) /* the server's list */}
               value={draft.skin}
               onPick={(skin) => setDraft((d) => ({ ...d, skin: skin as SkinTone }))}
             />
@@ -156,7 +154,7 @@ export function AvatarPicker({ persona, onSaved }: Props) {
             />
             <Swatches
               legend="Trousers"
-              options={(Object.keys(PANTS) as PantsColour[]).map((k) => ({ id: k, name: PANTS_NAMES[k], colour: hex(PANTS[k]) }))}
+              options={PANTS_COLOURS.map((k) => ({ id: k, name: PANTS_NAMES[k], colour: rgbToHex(PANTS[k]) }))}
               value={draft.pants}
               onPick={(pants) => setDraft((d) => ({ ...d, pants: pants as PantsColour }))}
             />
@@ -192,7 +190,7 @@ function Swatches(props: {
       <legend className="db-label">{props.legend}</legend>
       <div className="me-look__swatches">
         {props.options.map((o) => {
-          const on = sameHex(o.id, props.value) || o.id === props.value
+          const on = sameHex(o.id, props.value)
           return (
             <button
               key={o.id}

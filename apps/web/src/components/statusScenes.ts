@@ -1,8 +1,9 @@
 import { colourise, OUTLINE, SKINS, sitting, standing, type Avatar, type RGB, type RGBA } from './characterArt'
 
 /**
- * Me-page status scenes, drawn in the browser in YOUR look (port of scripts/generate-status-scenes.py,
- * same pixels for C's presets). 48×32 native px at 3× → 144×96.
+ * Me-page status scenes, drawn in the browser in YOUR look. 48×32 native px at 3× → 144×96.
+ * (Ported from the scene generator that produced the earlier PNGs; for C's 8 presets it matched them
+ * byte for byte before they were removed in favour of this.)
  * Privacy: they show the REASON, so they're only used on your own Me page, never on the map.
  */
 export type SceneName = 'wfh' | 'mc' | 'outstation' | 'leave'
@@ -168,7 +169,7 @@ function leave(a: Avatar): Canvas {
 
 const DRAW: Record<SceneName, (a: Avatar) => Canvas> = { wfh, mc, outstation, leave }
 
-/** RGBA bytes at 3× (144×96). Exported for the pixel check against the generated PNGs. */
+/** RGBA bytes at 3× (144×96). */
 export function scenePixels(name: SceneName, a: Avatar): { width: number; height: number; data: Uint8ClampedArray } {
   const cv = DRAW[name](a)
   const width = SW * SCALE
@@ -182,6 +183,7 @@ export function scenePixels(name: SceneName, a: Avatar): { width: number; height
 }
 
 const cache = new Map<string, string>()
+const MAX_CACHED = 32 // a few scenes × your recent looks; oldest out first
 
 /** Data URL of a scene in this look, drawn once and cached. */
 export function sceneUrl(name: SceneName, a: Avatar): string {
@@ -198,5 +200,6 @@ export function sceneUrl(name: SceneName, a: Avatar): string {
   ctx.putImageData(img, 0, 0)
   const url = c.toDataURL('image/png')
   cache.set(key, url)
+  if (cache.size > MAX_CACHED) cache.delete(cache.keys().next().value!)
   return url
 }

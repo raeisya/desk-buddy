@@ -28,20 +28,21 @@ interface Suggestion {
 export default function App() {
   const { walkers, hiddenSeated, walkingIds, start: startWalks, cancelAll: cancelWalks } = useWalkers()
   // People who arrive walk in from the door, leavers walk out, desk-switchers walk across.
+  const { persona, users, setPersona, refreshUsers } = usePersona()
   const onFloorChange = useCallback(
     (prev: FloorResponse, next: FloorResponse) => {
+      refreshUsers() // looks of people not on today's floor (e.g. someone without a desk saved a new look)
       const { walks, bulk } = presenceWalks(prev.desks, next.desks)
       if (bulk) return cancelWalks()
       startWalks(walks.map((w) => ({ personId: w.personId, name: w.name, walk: w.walk, hideSeated: w.direction === 'in' })))
     },
-    [startWalks, cancelWalks],
+    [startWalks, cancelWalks, refreshUsers],
   )
   const { floor, error, live, reload } = useFloor(onFloorChange)
-  const { persona, users, setPersona } = usePersona()
   // Everyone's saved character look (customization), for every place that draws people. Done here,
-  // before the children render, so map, header, login and Me all see the same latest looks. It only
-  // refills two small lookup maps from props (idempotent, ~80 people), so running each render is fine.
-  registerPeople(users, floor ? floor.desks.flatMap((d) => [d.owner, d.occupant]) : [])
+  // before the children render, so map, header, login and Me all see the same latest looks. It's a
+  // no-op unless the users list or the floor object changed (so not on every animation frame).
+  registerPeople(users, floor)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null)
   const [tab, setTab] = useState<AppTab>('map')

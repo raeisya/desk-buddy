@@ -43,13 +43,13 @@ export class UsersController {
 
   /**
    * PUT /api/users/:id/avatar { style, hair, skin, shirt, pants } — save your character look.
-   * Body `null` (or { reset: true }) goes back to the default preset. Every open map updates live.
+   * Body { reset: true } goes back to the default preset. Every open map updates live.
    * Like bookings/presence, identity comes from the request until server-side login lands.
    */
   @Put(':id/avatar')
   async setAvatar(@Param('id') id: string, @Body() body: unknown): Promise<{ avatar: AvatarConfig | null }> {
     if (!(await this.users.existsBy({ id }))) throw new NotFoundException(`No user ${id}`);
-    const reset = body === null || (typeof body === 'object' && (body as { reset?: unknown }).reset === true);
+    const reset = typeof body === 'object' && body !== null && (body as { reset?: unknown }).reset === true;
     const avatar = reset ? null : parseAvatar(body);
     await this.users.update(id, { avatar });
     this.events.emit({ type: 'floor-changed', date: this.clock.today() });

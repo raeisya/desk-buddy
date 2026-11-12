@@ -1,4 +1,4 @@
-import type { AvatarConfig, PersonRef } from '../api/contracts'
+import type { AvatarConfig, FloorResponse, PersonRef } from '../api/contracts'
 import { variantFor, type Direction } from '../theme/characters'
 
 /**
@@ -193,24 +193,31 @@ export function avatarSheetPixels(a: Avatar): { width: number; height: number; d
   return { width, height, data }
 }
 
+const MAX_CACHED = 64 // looks in use (≈80 people, most on presets) plus recent picker previews
 const sheetCache = new Map<string, string>()
+const sheetByObject = new WeakMap<Avatar, string>()
 const keyOf = (a: Avatar) => `${a.style}|${a.hair.join(',')}|${a.skin}|${a.shirt.join(',')}|${a.pants}`
 
-/** Data URL of one look's sheet, drawn once and cached. */
+/** Data URL of one look's sheet, drawn once and cached (bounded, oldest out first). */
 export function avatarSheetUrl(a: Avatar): string {
+  const fast = sheetByObject.get(a)
+  if (fast) return fast
   const key = keyOf(a)
-  const hit = sheetCache.get(key)
-  if (hit) return hit
-  const { width, height, data } = avatarSheetPixels(a)
-  const canvas = document.createElement('canvas')
-  canvas.width = width
-  canvas.height = height
-  const ctx = canvas.getContext('2d')!
-  const img = ctx.createImageData(width, height)
-  img.data.set(data)
-  ctx.putImageData(img, 0, 0)
-  const url = canvas.toDataURL('image/png')
-  sheetCache.set(key, url)
+  let url = sheetCache.get(key)
+  if (!url) {
+    const { width, height, data } = avatarSheetPixels(a)
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    const ctx = canvas.getContext('2d')!
+    const img = ctx.createImageData(width, height)
+    img.data.set(data)
+    ctx.putImageData(img, 0, 0)
+    url = canvas.toDataURL('image/png')
+    sheetCache.set(key, url)
+    if (sheetCache.size > MAX_CACHED) sheetCache.delete(sheetCache.keys().next().value!)
+  }
+  sheetByObject.set(a, url)
   return url
 }
 
@@ -226,34 +233,52 @@ export function avatarFrameStyle(a: Avatar, direction: Direction, column: number
 
 // ── Who looks like what ──────────────────────────────────────────────────────
 // Saved looks arrive with /api/users (everyone) and /api/floor (people on the floor, fresher), plus
-// your own just-saved look (freshest). App registers them on each render; null = default preset.
+// your own just-saved look (freshest, until the next fetch catches up). App calls registerPeople on
+// each render; it only rebuilds when the users list or the floor object actually changed.
 const fromUsers = new Map<string, AvatarConfig | null>()
 const fromFloor = new Map<string, AvatarConfig | null>()
-const justSaved = new Map<string, AvatarConfig | null>()
+const justSaved = new Map<string, { avatar: AvatarConfig | null; users: unknown; floor: unknown }>()
+let lastUsers: unknown = null
+let lastFloor: unknown = null
 
-export function registerPeople(users: readonly PersonRef[], floorPeople: readonly (PersonRef | null)[]) {
+export function registerPeople(users: readonly PersonRef[], floor: FloorResponse | null) {
+  if (users === lastUsers && floor === lastFloor) return // nothing new (e.g. every animation frame)
+  lastUsers = users
+  lastFloor = floor
   fromUsers.clear()
   for (const u of users) fromUsers.set(u.id, u.avatar ?? null)
   fromFloor.clear()
-  for (const p of floorPeople) if (p) fromFloor.set(p.id, p.avatar ?? null)
+  for (const d of floor?.desks ?? []) for (const p of [d.owner, d.occupant]) if (p) fromFloor.set(p.id, p.avatar ?? null)
+  // A fetch that happened after your save already has it: stop overriding, so a later change made
+  // elsewhere (another device, an admin) shows up instead of your old save.
+  for (const [id, s] of justSaved) {
+    if ((floor !== s.floor && fromFloor.has(id)) || users !== s.users) justSaved.delete(id)
+  }
 }
 
 /** Call after saving your look, so it shows everywhere at once (before the next refetch). */
 export function rememberSaved(personId: string, avatar: AvatarConfig | null) {
-  justSaved.set(personId, avatar)
+  justSaved.set(personId, { avatar, users: lastUsers, floor: lastFloor })
 }
 
 export function savedLookOf(personId: string): AvatarConfig | null {
-  if (justSaved.has(personId)) return justSaved.get(personId) ?? null
+  const own = justSaved.get(personId)
+  if (own) return own.avatar
   if (fromFloor.has(personId)) return fromFloor.get(personId) ?? null
   return fromUsers.get(personId) ?? null
 }
 
 const hexToRgb = (hex: string): RGB => [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)]
-const rgbToHex = (c: RGB) => `#${c.map((v) => v.toString(16).padStart(2, '0')).join('')}`
+export const rgbToHex = (c: RGB) => `#${c.map((v) => v.toString(16).padStart(2, '0')).join('')}`
 
+const fromConfigCache = new WeakMap<AvatarConfig, Avatar>() // one Avatar per config object (per fetch)
 export function avatarFromConfig(c: AvatarConfig): Avatar {
-  return { style: c.style, hair: hexToRgb(c.hair), skin: c.skin, shirt: hexToRgb(c.shirt), pants: c.pants }
+  let a = fromConfigCache.get(c)
+  if (!a) {
+    a = { style: c.style, hair: hexToRgb(c.hair), skin: c.skin, shirt: hexToRgb(c.shirt), pants: c.pants }
+    fromConfigCache.set(c, a)
+  }
+  return a
 }
 export function configFromAvatar(a: Avatar): AvatarConfig {
   return { style: a.style, hair: rgbToHex(a.hair), skin: a.skin, shirt: rgbToHex(a.shirt), pants: a.pants }

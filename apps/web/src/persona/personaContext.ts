@@ -9,6 +9,8 @@ export interface PersonaState {
   persona: UserSummary | null
   users: UserSummary[]
   setPersona: (user: UserSummary | null) => void
+  /** Refetch the users list (looks of people not on today's floor). */
+  refreshUsers: () => void
 }
 
 export const PersonaContext = createContext<PersonaState | null>(null)

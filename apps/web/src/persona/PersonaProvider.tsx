@@ -40,6 +40,10 @@ export function PersonaProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     api.getUsers().then(setUsers, () => setUsers([]))
   }, [])
+  // Refetch (e.g. after someone saves a new look). Keeps the current list if the request fails.
+  const refreshUsers = useCallback(() => {
+    api.getUsers().then(setUsers, () => undefined)
+  }, [])
 
   const setPersona = useCallback((user: UserSummary | null) => {
     setPersonaId(user?.id ?? null)
@@ -47,7 +51,7 @@ export function PersonaProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const persona = users.find((u) => u.id === personaId) ?? null
-  const value = useMemo(() => ({ persona, users, setPersona }), [persona, users, setPersona])
+  const value = useMemo(() => ({ persona, users, setPersona, refreshUsers }), [persona, users, setPersona, refreshUsers])
 
   return <PersonaContext.Provider value={value}>{children}</PersonaContext.Provider>
 }
