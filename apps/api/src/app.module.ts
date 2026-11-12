@@ -8,6 +8,7 @@ import { CommonModule } from './common/common.module';
 import { EventsModule } from './events/events.module';
 import { FloorModule } from './floor/floor.module';
 import { HealthController } from './health.controller';
+import { HodModule } from './hod/hod.module';
 import { PresenceModule } from './presence/presence.module';
 import { SeedModule } from './seed/seed.module';
 import { SlackModule } from './slack/slack.module';
@@ -40,6 +41,7 @@ import { UsersModule } from './users/users.module';
     SeedModule,
     SlackModule,
     BookingsModule,
+    HodModule,
   ],
   controllers: [HealthController],
 })

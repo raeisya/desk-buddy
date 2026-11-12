@@ -64,6 +64,34 @@ export interface ClockResponse {
   isDemoTime: boolean;
 }
 
+// HOD dashboard. Absence reasons (MC, leave…) are allowed here, never on the floor map.
+export interface HodTeamToday {
+  team: string;
+  total: number;
+  counts: Record<PresenceStatus, number>;
+  /** No presence row yet today. */
+  noUpdate: number;
+}
+
+export interface HodTodayResponse {
+  date: string;
+  teams: HodTeamToday[];
+}
+
+export interface HodHeatmapDay {
+  date: string;
+  /** People IN_OFFICE that day; null for today and future days. */
+  inOffice: number | null;
+  /** % of desks used (0–100, capped); null for today and future days. */
+  occupancy: number | null;
+}
+
+export interface HodHeatmapResponse {
+  totalDesks: number;
+  /** Oldest first; each week is Mon–Fri. */
+  weeks: { weekStart: string; days: HodHeatmapDay[] }[];
+}
+
 export type StreamEvent =
   | { type: 'floor-changed'; date: string }
   | { type: 'clock-changed'; now: string };
