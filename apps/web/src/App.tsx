@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FloorResponse } from './api/contracts'
+import { registerPeople } from './components/characterArt'
 import { DeskPanel } from './components/DeskPanel'
 import { Legend } from './components/Legend'
 import { PixelOffice } from './components/PixelOffice'
@@ -37,6 +38,10 @@ export default function App() {
   )
   const { floor, error, live, reload } = useFloor(onFloorChange)
   const { persona, users, setPersona } = usePersona()
+  // Everyone's saved character look (customization), for every place that draws people. Done here,
+  // before the children render, so map, header, login and Me all see the same latest looks. It only
+  // refills two small lookup maps from props (idempotent, ~80 people), so running each render is fine.
+  registerPeople(users, floor ? floor.desks.flatMap((d) => [d.owner, d.occupant]) : [])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null)
   const [tab, setTab] = useState<AppTab>('map')

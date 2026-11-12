@@ -1,3 +1,4 @@
+import type { AvatarConfig, PersonRef } from '../api/contracts'
 import { variantFor, type Direction } from '../theme/characters'
 
 /**
@@ -9,8 +10,8 @@ import { variantFor, type Direction } from '../theme/characters'
  * 16×24 native px per frame, drawn at 2× → 256×192 px. Cached as a data URL per look.
  */
 
-type RGB = readonly [number, number, number]
-type RGBA = readonly [number, number, number, number]
+export type RGB = readonly [number, number, number]
+export type RGBA = readonly [number, number, number, number]
 
 export const SKINS = {
   light: [255, 219, 180],
@@ -58,7 +59,7 @@ const FH = 24
 const SCALE = 2
 const COLS = 8
 const DIRS: readonly Direction[] = ['down', 'left', 'right', 'up']
-const OUTLINE: RGBA = [34, 32, 52, 255]
+export const OUTLINE: RGBA = [34, 32, 52, 255]
 const SHADOW: RGBA = [0, 0, 0, 70]
 const E = '................'
 
@@ -91,7 +92,7 @@ const LEGS_SIDE: Record<string, string[]> = {
   b: ['.....pppppp.....', '......pppp......', '.....pp.pp......', '.....pp.pp......', '....bbbbbb......', '.....xxxxxx.....'],
 }
 
-function standing(direction: Direction, style: HairStyle, legs: string, swing = 0): string[] {
+export function standing(direction: Direction, style: HairStyle, legs: string, swing = 0): string[] {
   const head = HEAD[`${direction}/${style === 'long' ? 'short' : style}`]
   let torso: string[]
   let leg: string[]
@@ -119,7 +120,7 @@ function standing(direction: Direction, style: HairStyle, legs: string, swing = 
   return rows.map((r) => r.join(''))
 }
 
-function sitting(direction: Direction, style: HairStyle, typing: 0 | 1 | null = null): string[] {
+export function sitting(direction: Direction, style: HairStyle, typing: 0 | 1 | null = null): string[] {
   const upper = standing(direction, style, 'n').slice(0, 16)
   if (direction === 'down' || direction === 'up') {
     const rows = [E, E, E, ...upper, E, E, E, E, E].map((r) => [...r])
@@ -148,7 +149,7 @@ function framesFor(direction: Direction, style: HairStyle): string[][] {
 }
 
 /** C's colourise(): palette + a 1px outline around the body (not around the shadow). */
-function colourise(rows: string[], a: Avatar): (RGBA | null)[][] {
+export function colourise(rows: string[], a: Avatar): (RGBA | null)[][] {
   const sleeve = a.shirt.map((c) => Math.floor(c * 0.78)) as unknown as RGB
   const cmap: Record<string, RGB> = {
     h: a.hair, s: SKINS[a.skin], e: [OUTLINE[0], OUTLINE[1], OUTLINE[2]], t: a.shirt, a: sleeve, p: PANTS[a.pants], b: [40, 32, 36],
@@ -223,9 +224,45 @@ export function avatarFrameStyle(a: Avatar, direction: Direction, column: number
   }
 }
 
-/** The look for a person. Today: C's preset for their variant; customization will override it per person. */
+// ── Who looks like what ──────────────────────────────────────────────────────
+// Saved looks arrive with /api/users (everyone) and /api/floor (people on the floor, fresher), plus
+// your own just-saved look (freshest). App registers them on each render; null = default preset.
+const fromUsers = new Map<string, AvatarConfig | null>()
+const fromFloor = new Map<string, AvatarConfig | null>()
+const justSaved = new Map<string, AvatarConfig | null>()
+
+export function registerPeople(users: readonly PersonRef[], floorPeople: readonly (PersonRef | null)[]) {
+  fromUsers.clear()
+  for (const u of users) fromUsers.set(u.id, u.avatar ?? null)
+  fromFloor.clear()
+  for (const p of floorPeople) if (p) fromFloor.set(p.id, p.avatar ?? null)
+}
+
+/** Call after saving your look, so it shows everywhere at once (before the next refetch). */
+export function rememberSaved(personId: string, avatar: AvatarConfig | null) {
+  justSaved.set(personId, avatar)
+}
+
+export function savedLookOf(personId: string): AvatarConfig | null {
+  if (justSaved.has(personId)) return justSaved.get(personId) ?? null
+  if (fromFloor.has(personId)) return fromFloor.get(personId) ?? null
+  return fromUsers.get(personId) ?? null
+}
+
+const hexToRgb = (hex: string): RGB => [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)]
+const rgbToHex = (c: RGB) => `#${c.map((v) => v.toString(16).padStart(2, '0')).join('')}`
+
+export function avatarFromConfig(c: AvatarConfig): Avatar {
+  return { style: c.style, hair: hexToRgb(c.hair), skin: c.skin, shirt: hexToRgb(c.shirt), pants: c.pants }
+}
+export function configFromAvatar(a: Avatar): AvatarConfig {
+  return { style: a.style, hair: rgbToHex(a.hair), skin: a.skin, shirt: rgbToHex(a.shirt), pants: a.pants }
+}
+
+/** The look for a person: what they saved, else C's preset for their variant. */
 export function avatarFor(personId: string): Avatar {
-  return PRESET_AVATARS[variantFor(personId)]
+  const saved = savedLookOf(personId)
+  return saved ? avatarFromConfig(saved) : PRESET_AVATARS[variantFor(personId)]
 }
 
 /** One frame of a person's look. Drop-in for frameStyle(variantFor(id), dir, col). */
