@@ -48,12 +48,13 @@ export function PixelOffice({ desks, selectedId, youId, onSelect }: Props) {
         const person = seatedPerson(d)
         const label = DESK_STATE_STYLE[d.state].label
         const isYou = !!youId && (d.owner?.id === youId || d.occupant?.id === youId)
+        const youSeatedHere = !!person && person.id === youId
         const seat = seatPosition(d)
         return (
           <div key={d.id} className="px-desk-slot">
             <button
               type="button"
-              className={`px-desk state-${d.state}${d.id === selectedId ? ' selected' : ''}${isYou ? ' is-you' : ''}`}
+              className={`px-desk state-${d.state}${d.id === selectedId ? ' selected' : ''}${isYou ? ' is-you' : ''}${isYou && !person ? ' is-you-empty' : ''}`}
               style={{ left: pct(d.x, MAP_W), top: pct(d.y, MAP_H), width: pct(d.w, MAP_W), height: pct(d.h, MAP_H) }}
               onClick={() => onSelect?.(d)}
               aria-label={`${d.id}, ${label}${person ? `, ${person.name}` : ''}${isYou ? ', your desk' : ''}`}
@@ -74,7 +75,7 @@ export function PixelOffice({ desks, selectedId, youId, onSelect }: Props) {
             )}
             {person && (
               <span
-                className={`px-name facing-${d.facing}${person.id === youId ? ' is-you' : ''}`}
+                className={`px-name facing-${d.facing}${youSeatedHere ? ' is-you' : ''}`}
                 aria-hidden="true"
                 style={{
                   left: pct(seat.x + CHARACTER_SHEET.frameWidth / 2, MAP_W),
@@ -83,7 +84,7 @@ export function PixelOffice({ desks, selectedId, youId, onSelect }: Props) {
                   top: pct(d.facing === 'down' ? seat.y + NAME_DROP : d.y + d.h, MAP_H),
                 }}
               >
-                {shortName(person.name)}
+                {youSeatedHere ? 'YOU' : shortName(person.name)}
               </span>
             )}
             {ownerAway(d) && (

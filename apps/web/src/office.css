@@ -51,7 +51,8 @@
   50% { box-shadow: inset 0 0 0 3px var(--desk-available), 0 0 0 3px rgba(120, 255, 150, 0.55); }
 }
 
-.px-desk.is-you::before {
+/* Your desk while you're not sitting at it (when you are, your name tag says YOU instead). */
+.px-desk.is-you-empty::before {
   content: 'YOU';
   position: absolute;
   left: 50%;
