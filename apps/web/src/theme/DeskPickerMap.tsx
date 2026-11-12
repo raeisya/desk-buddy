@@ -8,6 +8,8 @@ interface Props {
   floor: FloorResponse
   /** Desks that can be picked (no owner): green, clickable. */
   candidates: FloorDesk[]
+  /** Desks with an owner that can also be picked (Team › Manage desks, to take back): grey, clickable. */
+  owned?: FloorDesk[]
   /** Team whose area gets a dashed outline, so "near the team" is visible. */
   team: string
   /** Your current permanent desk (Me › Change desk): outlined so you see from → to. */
@@ -43,12 +45,13 @@ function popStyle(d: FloorDesk): CSSProperties {
  * area dashed, the chosen desk in red with its card beside it. Every green desk is a real button (Tab/Enter).
  * On a phone the map is too small to tap, so a zone-grouped dropdown does the picking.
  */
-export function DeskPickerMap({ floor, candidates, team, currentId, youId, selectedId, onSelect, popover }: Props) {
+export function DeskPickerMap({ floor, candidates, owned = [], team, currentId, youId, selectedId, onSelect, popover }: Props) {
   const narrow = useNarrow()
   const zones = zonesOf(floor.desks)
   const home = zones.find((z) => z.name === homeZoneFor(zones, team))
   const current = currentId ? floor.desks.find((d) => d.id === currentId) : undefined
-  const selected = candidates.find((d) => d.id === selectedId) ?? null
+  const pickable = [...candidates, ...owned]
+  const selected = pickable.find((d) => d.id === selectedId) ?? null
   // Team's zone first, then floor order.
   const byZone = zones
     .map((z) => [z.name, candidates.filter((d) => d.zone === z.name).sort((a, b) => a.id.localeCompare(b.id))] as const)
@@ -70,15 +73,15 @@ export function DeskPickerMap({ floor, candidates, team, currentId, youId, selec
               <span>Yours · {current.id}</span>
             </div>
           )}
-          {candidates.map((d) => {
+          {pickable.map((d) => {
             const on = d.id === selectedId
             return (
               <button
                 key={d.id}
                 type="button"
-                className={`picker-desk${on ? ' on' : ''}${d.facing === 'up' ? ' tag-below' : ''}`}
+                className={`picker-desk${d.owner ? ' picker-desk--owned' : ''}${on ? ' on' : ''}${d.facing === 'up' ? ' tag-below' : ''}`}
                 style={box(d)}
-                aria-label={`${d.id}, ${d.zone}, no owner`}
+                aria-label={`${d.id}, ${d.zone}, ${d.owner ? `${d.owner.name}'s desk` : 'no owner'}`}
                 aria-pressed={on}
                 onClick={() => onSelect(on ? null : d)}
               >
@@ -100,9 +103,9 @@ export function DeskPickerMap({ floor, candidates, team, currentId, youId, selec
           <span className="db-label">Pick a desk</span>
           <select
             value={selectedId ?? ''}
-            onChange={(e) => onSelect(candidates.find((d) => d.id === e.target.value) ?? null)}
+            onChange={(e) => onSelect(pickable.find((d) => d.id === e.target.value) ?? null)}
           >
-            <option value="">{candidates.length} desks to choose from</option>
+            <option value="">{pickable.length} desks to choose from</option>
             {byZone.map(([zone, desks]) => (
               <optgroup key={zone} label={zone === home?.name ? `${zone} · ${team}` : zone}>
                 {desks.map((d) => (
@@ -112,6 +115,17 @@ export function DeskPickerMap({ floor, candidates, team, currentId, youId, selec
                 ))}
               </optgroup>
             ))}
+            {owned.length > 0 && (
+              <optgroup label="Has an owner">
+                {[...owned]
+                  .sort((a, b) => a.id.localeCompare(b.id))
+                  .map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.id} · {d.owner?.name}
+                    </option>
+                  ))}
+              </optgroup>
+            )}
           </select>
         </label>
       )}

@@ -424,6 +424,9 @@ select:disabled { cursor: not-allowed; opacity: 0.6; }
   border-radius: 0;
 }
 .picker-desk:hover { background: rgba(30, 123, 58, 0.38); }
+.picker-desk--owned { background: rgba(31, 26, 26, 0.1); border-color: var(--rl-ink-2); }
+.picker-desk--owned:hover { background: rgba(31, 26, 26, 0.24); }
+.picker-desk--owned .picker-tag { background: var(--rl-ink-2); }
 .picker-desk.on { background: rgba(200, 50, 43, 0.28); border: 4px solid var(--rl-red); }
 .picker-tag { position: absolute; left: 50%; top: -22px; transform: translateX(-50%); padding: 1px 6px; font-family: var(--font-label); font-size: 12px; font-weight: 600; color: #fff; background: var(--rl-ok); white-space: nowrap; }
 .picker-desk.tag-below .picker-tag { top: auto; bottom: -22px; }

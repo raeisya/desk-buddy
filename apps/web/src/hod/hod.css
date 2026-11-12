@@ -59,7 +59,7 @@
 .hod-callout__big { font-size: 20px; margin-bottom: 4px !important; }
 .hod-callout__big strong { font-size: 28px; }
 
-/* Give a permanent desk: button in the new-joiner card, opens a pop-up */
+/* Manage desks: button in the new-joiner card, opens a pop-up */
 .hod-assign { display: flex; flex-direction: column; gap: 8px; }
 .hod-assign__line { margin: 0; font-size: 15px; }
 .hod-assign__open { min-height: 48px; font-size: 17px; }

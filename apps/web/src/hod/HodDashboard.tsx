@@ -2,15 +2,14 @@ import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import type { FloorResponse, HodHeatmapResponse, HodTodayResponse, UserSummary } from '../api/contracts'
 import { PageHeader } from '../theme/Chrome'
-import { AssignSeats } from './AssignSeats'
+import { ManageDesks } from './ManageDesks'
 import { capacity, heatStep, teamRows, WEEKDAYS } from './capacity'
-import { RemoveSeats } from './RemoveSeats'
 import './hod.css'
 
 interface Props {
   floor: FloorResponse
   persona: UserSummary
-  /** Active people, for "Give a permanent desk". */
+  /** Active people, for "Manage desks". */
   users: UserSummary[]
   onChanged: () => void
 }
@@ -150,8 +149,7 @@ export function HodDashboard({ floor, persona, users, onChanged }: Props) {
                 </dd>
               </div>
             </dl>
-            <AssignSeats floor={floor} persona={persona} users={users} onChanged={onChanged} />
-            <RemoveSeats floor={floor} persona={persona} users={users} onChanged={onChanged} />
+            <ManageDesks floor={floor} persona={persona} users={users} onChanged={onChanged} />
             <div className="hod-callout">
               <p className="hod-callout__big">
                 Room for <strong>~{cap.roomForMore}</strong> more staff
