@@ -147,14 +147,15 @@ export function MapFrame({ floor, users, legend, homeTeam, onSelectDesk, childre
   const owners = new Set(floor.desks.flatMap((d) => (d.owner ? [d.owner.id] : [])))
   const noDesk = users.length > 0 ? users.filter((u) => !owners.has(u.id)).length : null
   const freeHere = zone ? zone.desks.filter(isFree).sort((a, b) => a.id.localeCompare(b.id)) : []
+  const { t } = useLang()
 
   return (
     <section className="db-panel mapframe" aria-label="Floor plan">
       <div className="db-panel__head">
-        <h2 className="db-panel__title">Floor 12</h2>
+        <h2 className="db-panel__title">{t('floorTitle')}</h2>
         <span className="db-panel__hint">
-          {floor.desks.length} desks · <strong>{free} free</strong>
-          {noDesk !== null && ` · ${noDesk} staff without a desk`}
+          {t('desksCount', { n: floor.desks.length })} · <strong>{t('freeCount', { n: free })}</strong>
+          {noDesk !== null && t('noDeskCount', { n: noDesk })}
         </span>
       </div>
 
@@ -172,7 +173,7 @@ export function MapFrame({ floor, users, legend, homeTeam, onSelectDesk, childre
                   onClick={() => setPicked(z.name)}
                 >
                   <span className="zone-tile__name">{z.name}</span>
-                  <span className="zone-tile__free">{n} free</span>
+                  <span className="zone-tile__free">{t('freeCount', { n })}</span>
                 </button>
               )
             })}
@@ -180,17 +181,17 @@ export function MapFrame({ floor, users, legend, homeTeam, onSelectDesk, childre
           <MapCrop box={zone}>{children}</MapCrop>
           {legend && <div className="mapframe-legend">{legend}</div>}
           <div className="zone-free">
-            <h3 className="db-label">Free in {zone.name}</h3>
-            {freeHere.length === 0 && <p className="muted">No free desks here right now. Try another zone.</p>}
+            <h3 className="db-label">{t('freeInZone', { zone: zone.name })}</h3>
+            {freeHere.length === 0 && <p className="muted">{t('noFreeInZone')}</p>}
             {freeHere.map((d) => (
               <button key={d.id} type="button" className="zone-free__item" onClick={() => onSelectDesk?.(d)}>
                 <span>
                   <strong>{d.id}</strong>
                   <span className="zone-free__sub">
-                    {d.owner ? `${shortName(d.owner.name)}'s desk · away today` : 'Hot desk'}
+                    {d.owner ? t('ownerAwayDesk', { name: shortName(d.owner.name) }) : t('hotDesk')}
                   </span>
                 </span>
-                <span className="zone-free__go">View ▶</span>
+                <span className="zone-free__go">{t('view')}</span>
               </button>
             ))}
           </div>
@@ -207,24 +208,26 @@ export function MapFrame({ floor, users, legend, homeTeam, onSelectDesk, childre
 
 /** Side panel when no desk is selected, so the layout doesn't jump. */
 export function PanelHint() {
+  const { t } = useLang()
   return (
     <aside className="db-panel panel-hint" aria-label="How to take a desk">
       <div className="db-panel__head">
-        <h2 className="db-panel__title">Pick a desk</h2>
+        <h2 className="db-panel__title">{t('pickDesk')}</h2>
       </div>
       <div className="db-panel__body">
-        <p>Green desks are free today: their owners said in Slack that they're out.</p>
-        <p className="muted">Tap one to see whose it is and take it.</p>
+        <p>{t('pickDeskBody')}</p>
+        <p className="muted">{t('pickDeskTap')}</p>
       </div>
     </aside>
   )
 }
 
 export function DrawingFooter() {
+  const { t } = useLang()
   return (
     <footer className="tb-footer">
-      <span>Scale 1:100 · Rev B · Drawn by DeskBuddy</span>
-      <span>Desks free up when their owners say they're out in Slack</span>
+      <span>{t('footerScale')}</span>
+      <span>{t('footerSlack')}</span>
     </footer>
   )
 }

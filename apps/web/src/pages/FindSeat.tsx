@@ -7,6 +7,7 @@ import { isFree, suggestSeat } from '../components/seating'
 import { MapCrop, PageHeader } from '../theme/Chrome'
 import { floorDay } from '../theme/format'
 import { rankSeats, zonesOf } from '../theme/zones'
+import { useLang } from '../i18n/lang'
 import './screens.css'
 
 interface Props {
@@ -29,8 +30,9 @@ export function FindSeat({ floor, persona, onChanged, onShowOnMap }: Props) {
   const [chosenId, setChosenId] = useState<string | null>(null)
   const cardRef = useRef<HTMLDivElement>(null)
 
+  const { lang, t } = useLang()
   const sitting = floor.desks.find((d) => d.occupant?.id === persona.id) ?? null
-  const suggestion = suggestSeat(floor.desks, persona)
+  const suggestion = suggestSeat(floor.desks, persona, lang)
   const ranked = rankSeats(floor.desks, persona)
   const best = suggestion.ok ? suggestion.desk : (ranked[0] ?? null)
   // Best first, then the nearest others. Re-read from the live floor so a desk someone just took drops out.
@@ -63,22 +65,22 @@ export function FindSeat({ floor, persona, onChanged, onShowOnMap }: Props) {
     return (
       <section className="tab-screen">
         <PageHeader
-          title="You're sorted for today"
+          title={t('sortedTitle')}
           meta={floorDay(floor)}
-          note="Your desk is held for today. Leave it if your plans change so someone else can sit."
+          note={t('sortedNote')}
         />
         <div className="db-panel">
           <div className="db-panel__head">
-            <h2 className="db-panel__title">Desk {sitting.id}</h2>
-            <span className="db-chip db-chip--ok">Yours today</span>
+            <h2 className="db-panel__title">{t('deskN', { desk: sitting.id })}</h2>
+            <span className="db-chip db-chip--ok">{t('yoursToday')}</span>
           </div>
           <div className="db-panel__body screen-stack">
-            <p className="screen-lead">{sitting.zone}. See you there.</p>
+            <p className="screen-lead">{t('seeYou', { zone: sitting.zone })}</p>
             <button type="button" className="db-btn db-btn--secondary" onClick={() => onShowOnMap(sitting)}>
-              Show on map
+              {t('showOnMap')}
             </button>
             <button type="button" className="db-btn db-btn--plain" disabled={busy} onClick={() => run(() => api.releaseDesk(sitting.id, persona.id))}>
-              {busy ? 'Leaving…' : 'Leave this desk'}
+              {busy ? t('leaving') : t('leaveThisDesk')}
             </button>
             {error && <p className="error" role="alert">{error}</p>}
           </div>
@@ -91,9 +93,9 @@ export function FindSeat({ floor, persona, onChanged, onShowOnMap }: Props) {
     return (
       <section className="tab-screen">
         <PageHeader
-          title="No free desks right now"
+          title={t('noFreeTitle')}
           meta={floorDay(floor)}
-          note="Desks free up when their owners post in Slack that they're out. This page updates live."
+          note={t('noFreeNote')}
         />
       </section>
     )
@@ -101,7 +103,7 @@ export function FindSeat({ floor, persona, onChanged, onShowOnMap }: Props) {
 
   return (
     <section className="tab-screen">
-      <PageHeader title="Best seat for you" meta={floorDay(floor)} note={`Free desks closest to the ${persona.team} team.`} />
+      <PageHeader title={t('bestTitle')} meta={floorDay(floor)} note={t('bestNote', { team: persona.team })} />
       <div className="db-panel seat-card" ref={cardRef}>
         {zone && (
           <MapCrop box={zone}>
@@ -115,23 +117,23 @@ export function FindSeat({ floor, persona, onChanged, onShowOnMap }: Props) {
         )}
         <div className="db-panel__body screen-stack">
           <div className="screen-row">
-            <h2 className="screen-desk">Desk {chosen.id}</h2>
-            <span className={`db-chip ${isBest ? 'db-chip--ok' : 'db-chip--soft'}`}>{isBest ? 'Best match' : 'Free today'}</span>
+            <h2 className="screen-desk">{t('deskN', { desk: chosen.id })}</h2>
+            <span className={`db-chip ${isBest ? 'db-chip--ok' : 'db-chip--soft'}`}>{isBest ? t('bestMatch') : t('freeToday')}</span>
           </div>
           <p className="screen-lead">
             {isBest && suggestion.ok ? (
               suggestion.note
             ) : (
               <>
-                {chosen.zone} · {chosen.owner ? `${shortName(chosen.owner.name)} is away today` : 'Hot desk, no owner'}
+                {chosen.zone} · {chosen.owner ? t('isAway', { name: shortName(chosen.owner.name) }) : t('hotNoOwner')}
               </>
             )}
           </p>
           <button type="button" className="db-btn screen-cta" disabled={busy} onClick={() => run(() => api.claimDesk(chosen.id, persona.id))}>
-            {busy ? 'Taking…' : `Take ${chosen.id} ▶`}
+            {busy ? t('taking') : t('takeN', { desk: chosen.id })}
           </button>
           <button type="button" className="seat-maplink" onClick={() => onShowOnMap(chosen)}>
-            See on full map
+            {t('seeFullMap')}
           </button>
           {error && <p className="error" role="alert">{error}</p>}
         </div>
@@ -139,7 +141,7 @@ export function FindSeat({ floor, persona, onChanged, onShowOnMap }: Props) {
 
       {options.length > 1 && (
         <div className="screen-stack">
-          <h3 className="db-label">Options near your team</h3>
+          <h3 className="db-label">{t('optionsNear')}</h3>
           {options.map((d) => {
             const on = d.id === chosen.id
             return (
@@ -153,11 +155,11 @@ export function FindSeat({ floor, persona, onChanged, onShowOnMap }: Props) {
                 <span>
                   <strong>{d.id}</strong>
                   <span className="zone-free__sub">
-                    {d.id === best.id ? 'Best match · ' : ''}
-                    {d.zone} · {d.owner ? `${shortName(d.owner.name)} is away today` : 'Hot desk'}
+                    {d.id === best.id ? `${t('bestMatch')} · ` : ''}
+                    {d.zone} · {d.owner ? t('isAway', { name: shortName(d.owner.name) }) : t('hotDesk')}
                   </span>
                 </span>
-                <span className="zone-free__go">{on ? 'Showing' : 'View ▶'}</span>
+                <span className="zone-free__go">{on ? t('showing') : t('view')}</span>
               </button>
             )
           })}

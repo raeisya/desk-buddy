@@ -10,6 +10,7 @@ import './screens.css'
 import { AvatarPicker } from '../components/AvatarPicker'
 import { avatarFor, personFrameStyle } from '../components/characterArt'
 import { sceneUrl, type SceneName } from '../components/statusScenes'
+import { useLang, type StringKey } from '../i18n/lang'
 
 /**
  * Your own status as a little pixel scene, drawn in your own look (components/statusScenes.ts). Private: only on your own Me page — colleagues only ever see "Away".
@@ -21,12 +22,12 @@ const SCENES: Partial<Record<PresenceStatus, { file: SceneName; alt: string }>> 
   LEAVE: { file: 'leave', alt: 'On holiday at the beach with sunglasses and a coconut drink' },
 }
 
-const STATUSES: { id: PresenceStatus; label: string }[] = [
-  { id: 'IN_OFFICE', label: 'In office' },
-  { id: 'WFH', label: 'WFH' },
-  { id: 'MC', label: 'MC' },
-  { id: 'LEAVE', label: 'Leave' },
-  { id: 'OUTSTATION', label: 'Outstation' },
+const STATUSES: { id: PresenceStatus; label: StringKey }[] = [
+  { id: 'IN_OFFICE', label: 'st_IN_OFFICE' },
+  { id: 'WFH', label: 'st_WFH' },
+  { id: 'MC', label: 'st_MC' },
+  { id: 'LEAVE', label: 'st_LEAVE' },
+  { id: 'OUTSTATION', label: 'st_OUTSTATION' },
 ]
 
 interface Props {
@@ -51,6 +52,7 @@ function readSlackReturn(): 'ok' | 'error' | null {
 }
 
 export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
+  const { t } = useLang()
   const [busy, setBusy] = useState<PresenceStatus | null>(null)
   // Slack status sync: connected = a status set here is mirrored to the person's Slack status.
   const [slackLinked, setSlackLinked] = useState<boolean | null>(null)
@@ -113,7 +115,7 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
   // '' if this browser can't draw the scene (canvas blocked/unavailable): show your character instead.
   const sceneSrc = sceneDef ? sceneUrl(sceneDef.file, avatarFor(persona.id)) : ''
   const scene = sceneDef && sceneSrc ? sceneDef : undefined
-  const headline = active ? STATUSES.find((s) => s.id === active)!.label : ownerOut ? 'Away' : 'No desk yet'
+  const headline = active ? t(STATUSES.find((s) => s.id === active)!.label) : ownerOut ? t('away') : t('noDeskYet')
   const out = active !== null ? active !== 'IN_OFFICE' : ownerOut
   const tone = active === 'IN_OFFICE' ? ' me-status--in' : out ? ' me-status--out' : ''
 
@@ -143,7 +145,7 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
     try {
       await api.setPresence(persona.id, status)
       setLastSet(status)
-      setMessage(slackLinked ? 'Saved. The map and your Slack status are updated.' : 'Saved. The map has been updated.')
+      setMessage(t(slackLinked ? 'savedSlack' : 'saved'))
       onChanged()
     } catch (e) {
       setMessage((e as Error).message)
@@ -154,7 +156,7 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
 
   return (
     <section className="tab-screen">
-      <PageHeader title="Today you're" meta={floorDay(floor)} />
+      <PageHeader title={t('meTitle')} meta={floorDay(floor)} />
 
       <div className="db-panel me-card">
         <div className="me-id">
@@ -179,24 +181,29 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
               {own ? (
                 out ? (
                   <>
-                    <strong>{own.id}</strong> is free for others today. Colleagues just see "Away".
+                    <strong>{own.id}</strong>
+                    {t('meDeskOutTail')}
                   </>
                 ) : (
                   <>
-                    Your desk <strong>{own.id}</strong> ({own.zone}) shows as yours today.
+                    {t('meDeskInHead')}
+                    <strong>{own.id}</strong>
+                    {t('meDeskInTail', { zone: own.zone })}
                   </>
                 )
               ) : sitting ? (
                 <>
-                  You're at <strong>{sitting.id}</strong> today ({sitting.zone}).
+                  {t('meSittingHead')}
+                  <strong>{sitting.id}</strong>
+                  {t('meSittingTail', { zone: sitting.zone })}
                 </>
               ) : (
-                <>No desk of your own yet. Take a free one near your team.</>
+                <>{t('meNoDesk')}</>
               )}
             </p>
             {!own && !sitting && onFindSeat && (
               <button type="button" className="db-btn me-find" onClick={onFindSeat}>
-                Find seat ▶
+                {t('findSeatBtn')}
               </button>
             )}
           </div>
@@ -290,7 +297,7 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
         )}
 
         <div className="me-fix">
-          <h2 className="db-label">Not right? Tap to fix</h2>
+          <h2 className="db-label">{t('notRight')}</h2>
           <div className="me-seg" role="group" aria-label="Today's status">
             {STATUSES.map((s) => (
               <button
@@ -301,7 +308,7 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
                 disabled={busy !== null}
                 onClick={() => set(s.id)}
               >
-                {busy === s.id ? 'Saving…' : s.label}
+                {busy === s.id ? t('saving') : t(s.label)}
               </button>
             ))}
           </div>
@@ -317,27 +324,29 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
             <path d="M2 3h14v9H7l-4 3v-3H2z" />
           </svg>
           <span>
-            Easier still: post in your team's Slack channel, e.g. <q>WFH today</q>, or set your Slack status. DeskBuddy reads both.
+            {t('slackTipHead')}
+            <q>WFH today</q>
+            {t('slackTipTail')}
           </span>
         </p>
         {(slackSync || slackLinked) && (
         <div className="me-slack me-slack--sync">
           {slackLinked ? (
-            <span className="me-sync-on">✓ Synced: changing your status here updates your Slack status too.</span>
+            <span className="me-sync-on">{t('syncOn')}</span>
           ) : (
             <>
-              <span>Want your Slack status to follow DeskBuddy?</span>
+              <span>{t('syncAsk')}</span>
               <a className="db-btn db-btn--secondary me-sync-btn" href="/api/auth/slack/status">
-                Connect Slack
+                {t('syncBtn')}
               </a>
             </>
           )}
           {slackReturn === 'error' && (
             <span className="error" role="alert">
-              Couldn't connect Slack. Sign in with your linked Slack account and try again.
+              {t('syncErr')}
             </span>
           )}
-          {slackReturn === 'ok' && slackLinked && <span className="me-msg" role="status">Slack connected.</span>}
+          {slackReturn === 'ok' && slackLinked && <span className="me-msg" role="status">{t('syncOk')}</span>}
         </div>
         )}
       </div>
