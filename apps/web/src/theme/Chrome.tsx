@@ -11,16 +11,22 @@ const TZ = 'Asia/Kuala_Lumpur'
 const fmtDay = new Intl.DateTimeFormat('en-GB', { timeZone: TZ, weekday: 'short', day: 'numeric', month: 'short' })
 const fmtTime = new Intl.DateTimeFormat('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hour12: false })
 
+/** Role shown under the signed-in name. Aina is the demo's new joiner (no desk yet). */
+function personaTag(user: UserSummary): string {
+  const role = user.id === 'u-aina' ? 'New joiner' : user.role === 'hod' ? 'HOD' : user.role === 'admin' ? 'Admin' : 'Staff'
+  return `${role} · ${user.team}`
+}
+
 interface TitleBlockProps {
   floor: FloorResponse | null
   live: boolean
   persona: UserSummary | null
-  /** The persona picker (B's switcher today, C's login page later). */
-  children?: ReactNode
+  /** Back to the login page. */
+  onLogout?: () => void
 }
 
 /** Page header styled as an engineering drawing's title block. */
-export function TitleBlock({ floor, live, persona, children }: TitleBlockProps) {
+export function TitleBlock({ floor, live, persona, onLogout }: TitleBlockProps) {
   const now = floor ? new Date(floor.now) : null
   return (
     <header className="tb">
@@ -43,9 +49,21 @@ export function TitleBlock({ floor, live, persona, children }: TitleBlockProps) 
         </div>
       </dl>
       <div className="tb-who">
-        {persona && <span className="tb-sprite" style={frameStyle(variantFor(persona.id), 'down', 0)} aria-hidden="true" />}
-        <div className="tb-who-picker">{children}</div>
+        {persona && (
+          <>
+            <span className="tb-sprite" style={frameStyle(variantFor(persona.id), 'down', 0)} aria-hidden="true" />
+            <div className="tb-who-text">
+              <span className="tb-who-name">{persona.name}</span>
+              <span className="tb-who-role">{personaTag(persona)}</span>
+            </div>
+          </>
+        )}
         <span className={`tb-live${live ? ' on' : ''}`}>{live ? '● Live' : '○ Offline'}</span>
+        {onLogout && (
+          <button type="button" className="db-btn db-btn--secondary tb-logout" onClick={onLogout}>
+            Log out
+          </button>
+        )}
       </div>
     </header>
   )

@@ -4,8 +4,8 @@ import { Legend } from './components/Legend'
 import { PixelOffice } from './components/PixelOffice'
 import { isFree, suggestSeat } from './components/seating'
 import { useFloor } from './hooks/useFloor'
+import { Login } from './pages/Login'
 import { usePersona } from './persona/personaContext'
-import { PersonaSwitcher } from './persona/PersonaSwitcher'
 import { DrawingFooter, MapFrame, PanelHint, TitleBlock } from './theme/Chrome'
 
 interface Suggestion {
@@ -16,7 +16,7 @@ interface Suggestion {
 
 export default function App() {
   const { floor, error, live, reload } = useFloor()
-  const { persona, users } = usePersona()
+  const { persona, users, setPersona } = usePersona()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null)
   // Look the desk up in the latest floor so the panel updates live when state changes.
@@ -39,11 +39,27 @@ export default function App() {
     if (focusId) setSelectedId(focusId)
   }
 
+  // Users load async; until then a saved persona can't resolve, so don't flash the login page.
+  if (users.length === 0) {
+    return (
+      <div className="app">
+        <p className={error ? 'error' : 'muted'}>{error ? `Can't reach the API: ${error}` : 'Loading…'}</p>
+      </div>
+    )
+  }
+  if (!persona) return <Login />
+
   return (
     <div className="app">
-      <TitleBlock floor={floor} live={live} persona={persona}>
-        <PersonaSwitcher />
-      </TitleBlock>
+      <TitleBlock
+        floor={floor}
+        live={live}
+        persona={persona}
+        onLogout={() => {
+          setSelectedId(null)
+          setPersona(null) // → login page
+        }}
+      />
 
       <main>
         {error && <p className="error">Can't reach the API: {error}</p>}

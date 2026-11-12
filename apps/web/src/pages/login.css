@@ -1,0 +1,103 @@
+/*
+ * Login / persona picker (C). Uses the Redline tokens and .db-* blocks from theme/theme.css.
+ * Fits one screen: sizes scale with viewport HEIGHT (vh clamps), so it never needs to scroll on
+ * a laptop. Overflow stays scrollable only as a last resort on tiny screens.
+ */
+
+.login {
+  height: 100dvh;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: clamp(12px, 3vh, 32px) 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 2.4vh, 24px);
+}
+
+.login-brand { display: flex; flex-direction: column; align-items: center; gap: clamp(4px, 1vh, 8px); text-align: center; }
+.login-brand .db-label { font-size: 14px; letter-spacing: 0.12em; }
+.login-logo {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(34px, min(8vw, 8vh), 68px);
+  line-height: 1;
+  color: var(--rl-red);
+  text-transform: uppercase;
+}
+.login-tagline { margin: 0; font-size: clamp(16px, 2.2vh, 20px); color: var(--rl-ink-2); }
+
+.login-panel { width: min(1040px, 100%); flex-shrink: 0; }
+.login-panel .db-panel__title { font-size: clamp(20px, 2.8vh, 26px); }
+
+.login-personas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(12px, 2vw, 24px);
+  padding: clamp(14px, 2.6vh, 28px) clamp(14px, 2vw, 28px);
+}
+
+.persona-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(6px, 1.2vh, 12px);
+  padding: clamp(12px, 2.4vh, 24px) 16px;
+  font: inherit;
+  color: var(--rl-ink);
+  text-align: center;
+  background: var(--rl-paper);
+  border: 2px solid var(--rl-ink);
+  border-radius: 0;
+  box-shadow: 4px 4px 0 var(--rl-ink);
+  cursor: pointer;
+  transition: transform 0.1s steps(2), box-shadow 0.1s steps(2);
+}
+.persona-card:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--rl-red); }
+.persona-card:active { transform: translate(2px, 2px); box-shadow: none; }
+.persona-card:focus-visible { outline: 3px solid var(--rl-red); outline-offset: 3px; }
+/* 2:3 like a sprite frame; height drives the size */
+.persona-sprite { height: clamp(72px, 13vh, 132px); aspect-ratio: 2 / 3; flex-shrink: 0; }
+.persona-text { display: flex; flex-direction: column; align-items: center; gap: clamp(4px, 1vh, 10px); }
+.persona-name { font-size: clamp(20px, 2.8vh, 26px); font-weight: 600; line-height: 1.2; }
+.persona-blurb { font-size: 16px; line-height: 1.4; color: var(--rl-ink-2); }
+
+/* Slack sign-in (show-only), centred under the personas */
+.login-alt {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.4vh, 12px);
+  width: min(440px, 100%);
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 0 clamp(14px, 2vw, 28px) clamp(14px, 2.6vh, 28px);
+}
+.login-slack { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+.login-slack .db-btn { width: 100%; }
+
+.login-footer { width: min(1040px, 100%); padding-top: 8px; }
+
+/* Short laptop screens: drop the descriptions first */
+@media (max-height: 640px) {
+  .persona-blurb { display: none; }
+  .login-tagline { display: none; }
+  .login-brand .db-label { display: none; }
+  .login-footer { display: none; }
+}
+
+/* Phone width: persona rows, one column */
+@media (max-width: 760px) {
+  .login { justify-content: flex-start; padding: 16px 12px; }
+  .login-personas { grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 12px; }
+  .persona-card { flex-direction: row; text-align: left; gap: 14px; padding: 10px 14px; }
+  .persona-sprite { height: 64px; }
+  .persona-text { align-items: flex-start; gap: 4px; }
+  .persona-name { font-size: 19px; }
+  .persona-blurb { font-size: 14px; }
+  .login-alt { width: 100%; gap: 10px; padding: 0 12px 12px; }
+  .login-footer { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) { .persona-card { transition: none; } }
