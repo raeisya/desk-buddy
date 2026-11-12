@@ -4,6 +4,7 @@ import type { FloorResponse, HodHeatmapResponse, HodTodayResponse, UserSummary }
 import { PageHeader } from '../theme/Chrome'
 import { AssignSeats } from './AssignSeats'
 import { capacity, heatStep, teamRows, WEEKDAYS } from './capacity'
+import { RemoveSeats } from './RemoveSeats'
 import './hod.css'
 
 interface Props {
@@ -150,6 +151,7 @@ export function HodDashboard({ floor, persona, users, onChanged }: Props) {
               </div>
             </dl>
             <AssignSeats floor={floor} persona={persona} users={users} onChanged={onChanged} />
+            <RemoveSeats floor={floor} persona={persona} users={users} onChanged={onChanged} />
             <div className="hod-callout">
               <p className="hod-callout__big">
                 Room for <strong>~{cap.roomForMore}</strong> more staff
