@@ -1,4 +1,5 @@
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
+import type { DeskFacing } from '../common/contracts';
 import { User } from './user.entity';
 
 // Desk ownership lives ONLY here (desks.owner_id). There is no users.home_desk_id,
@@ -15,6 +16,9 @@ export class Desk {
 
   @Column({ type: 'varchar' })
   zone!: string;
+
+  @Column({ type: 'varchar', default: 'down' })
+  facing!: DeskFacing;
 
   @Column({ name: 'owner_id', type: 'varchar', nullable: true })
   ownerId!: string | null;

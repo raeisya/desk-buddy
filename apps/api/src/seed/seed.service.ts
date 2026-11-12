@@ -2,7 +2,7 @@ import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ClockService } from '../common/clock.service';
-import type { PresenceStatus, Role } from '../common/contracts';
+import type { DeskFacing, PresenceStatus, Role } from '../common/contracts';
 import { Desk, Presence, User } from '../entities';
 import desksJson from './data/desks.json';
 import presenceTodayJson from './data/presence-today.json';
@@ -27,7 +27,7 @@ export class SeedService implements OnApplicationBootstrap {
   async onApplicationBootstrap(): Promise<void> {
     if ((await this.users.count()) === 0) {
       await this.users.insert(usersJson.map((u) => ({ ...u, role: u.role as Role })));
-      await this.desks.insert(desksJson);
+      await this.desks.insert(desksJson.map((d) => ({ ...d, facing: d.facing as DeskFacing })));
       this.log.log(`Seeded ${usersJson.length} users and ${desksJson.length} desks`);
     }
 

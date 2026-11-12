@@ -18,6 +18,11 @@ export type Role = (typeof ROLES)[number];
 export const DESK_STATES = ['occupied', 'available', 'hot-seated', 'away', 'unassigned'] as const;
 export type DeskState = (typeof DESK_STATES)[number];
 
+// Which way the seated person looks (towards their monitor), in map space.
+// 'down' = chair in the top half of the desk cell, desk in the bottom half; 'up' = the reverse.
+export const DESK_FACINGS = ['up', 'down'] as const;
+export type DeskFacing = (typeof DESK_FACINGS)[number];
+
 export interface PersonRef {
   id: string;
   name: string;
@@ -31,6 +36,7 @@ export interface FloorDesk {
   w: number;
   h: number;
   zone: string;
+  facing: DeskFacing;
   state: DeskState;
   owner: PersonRef | null;
   /** Who is sitting there today via a booking (owner or hot-seater). */
