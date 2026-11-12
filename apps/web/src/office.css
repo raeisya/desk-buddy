@@ -125,3 +125,29 @@
 .px-button.primary { background: var(--desk-available); }
 .px-button:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #12141a; }
 .px-button:disabled { opacity: 0.6; cursor: progress; }
+
+/* Demo clock (presenter tool). Loud when not on real time, since it moves the clock for everyone. */
+.demo-clock { position: relative; }
+.demo-clock-chip {
+  font: 700 0.85rem ui-monospace, 'SF Mono', Menlo, monospace;
+  padding: 2px 8px;
+  cursor: pointer;
+  color: var(--muted);
+  background: transparent;
+  border: 2px solid var(--border);
+}
+.demo-clock-chip.is-demo { color: #12141a; background: var(--desk-away); border-color: #12141a; }
+.demo-clock-menu {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 6px);
+  left: 0;
+  display: grid;
+  gap: 6px;
+  width: 230px;
+  padding: 10px;
+  background: var(--card);
+  border: 3px solid #12141a;
+  box-shadow: 3px 3px 0 #12141a;
+}
+.demo-clock-menu p { margin: 0; font-size: 0.75rem; }

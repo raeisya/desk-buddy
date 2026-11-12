@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { DemoClock } from './components/DemoClock'
 import { DeskPanel } from './components/DeskPanel'
 import { Legend } from './components/Legend'
 import { PixelOffice } from './components/PixelOffice'
@@ -19,6 +20,7 @@ export default function App() {
         <h1>DeskBuddy</h1>
         <span className="muted">{floor ? `${floor.date} · auto-release at ${floor.releaseCutoff}` : 'Loading…'}</span>
         <PersonaSwitcher />
+        {floor && <DemoClock stamp={floor.now} releaseCutoff={floor.releaseCutoff} />}
         <span className={`live ${live ? 'on' : ''}`}>{live ? '● Live' : '○ Offline'}</span>
       </header>
 
