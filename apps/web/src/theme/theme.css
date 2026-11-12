@@ -319,7 +319,8 @@ select:disabled { cursor: not-allowed; opacity: 0.6; }
 }
 
 /* Phone: fixed bar at the bottom */
-.app--phone { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+/* .app.app--phone: must beat the small-screen `.app { padding: 10px }` below, or the bar covers the page bottom */
+.app.app--phone { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
 .app-nav--bottom {
   position: fixed;
   left: 0;

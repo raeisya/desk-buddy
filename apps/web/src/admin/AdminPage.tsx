@@ -13,6 +13,7 @@ interface Props {
 type Show = 'all' | 'active' | 'inactive'
 
 const ROLE_LABEL: Record<Role, string> = { staff: 'Staff', hod: 'HOD', admin: 'Admin' }
+const PAGE_SIZE = 15
 
 /**
  * Staff page for admins (C): everyone in one table. Change team or role, deactivate people who left
@@ -25,6 +26,7 @@ export function AdminPage({ floor, persona }: Props) {
   const [query, setQuery] = useState('')
   const [team, setTeam] = useState('all')
   const [show, setShow] = useState<Show>('all')
+  const [page, setPage] = useState(0)
 
   // Refetch on live floor changes too: an HOD assigning a desk shows up here without a reload.
   useEffect(() => {
@@ -49,6 +51,13 @@ export function AdminPage({ floor, persona }: Props) {
       (show === 'all' || (show === 'active' ? u.active : !u.active)) &&
       (!q || u.name.toLowerCase().includes(q) || u.deskId?.toLowerCase() === q),
   )
+  // Clamp so a shrinking list (e.g. someone deactivated) never leaves us on an empty page.
+  const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
+  const current = Math.min(page, pageCount - 1)
+  const pageRows = rows.slice(current * PAGE_SIZE, (current + 1) * PAGE_SIZE)
+  const first = rows.length === 0 ? 0 : current * PAGE_SIZE + 1
+  const last = current * PAGE_SIZE + pageRows.length
+
   const active = users.filter((u) => u.active).length
   const withDesk = users.filter((u) => u.deskId).length
 
@@ -77,11 +86,11 @@ export function AdminPage({ floor, persona }: Props) {
         <div className="admin-tools">
           <label className="admin-search">
             <span className="db-label">Search</span>
-            <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Name or desk (D-04)" />
+            <input type="search" value={query} onChange={(e) => (setQuery(e.target.value), setPage(0))} placeholder="Name or desk (D-04)" />
           </label>
           <label>
             <span className="db-label">Team</span>
-            <select value={team} onChange={(e) => setTeam(e.target.value)}>
+            <select value={team} onChange={(e) => (setTeam(e.target.value), setPage(0))}>
               <option value="all">All teams</option>
               {teams.map((t) => (
                 <option key={t}>{t}</option>
@@ -90,7 +99,7 @@ export function AdminPage({ floor, persona }: Props) {
           </label>
           <div className="admin-show" role="group" aria-label="Show">
             {(['all', 'active', 'inactive'] as const).map((s) => (
-              <button key={s} type="button" className={show === s ? 'on' : undefined} aria-pressed={show === s} onClick={() => setShow(s)}>
+              <button key={s} type="button" className={show === s ? 'on' : undefined} aria-pressed={show === s} onClick={() => (setShow(s), setPage(0))}>
                 {s === 'all' ? 'All' : s === 'active' ? 'Active' : 'Deactivated'}
               </button>
             ))}
@@ -118,7 +127,7 @@ export function AdminPage({ floor, persona }: Props) {
               </tr>
             </thead>
             <tbody>
-              {rows.map((u) => {
+              {pageRows.map((u) => {
                 const self = u.id === persona.id
                 const busy = busyId === u.id
                 return (
@@ -188,9 +197,31 @@ export function AdminPage({ floor, persona }: Props) {
             </tbody>
           </table>
         </div>
-        <p className="admin-foot muted">
-          Showing {rows.length} of {users.length}. Permanent desks are assigned by each team's HOD on the Team page.
-        </p>
+        <div className="admin-foot">
+          <p className="muted">
+            Showing {first}–{last} of {rows.length}
+            {rows.length !== users.length && ` (${users.length} in total)`}. Permanent desks are assigned by each team's HOD on the
+            Team page.
+          </p>
+          {pageCount > 1 && (
+            <nav className="admin-pager" aria-label="Staff pages">
+              <button type="button" className="db-btn db-btn--plain admin-btn" disabled={current === 0} onClick={() => setPage(current - 1)}>
+                ‹ Prev
+              </button>
+              <span className="db-label">
+                Page {current + 1} of {pageCount}
+              </span>
+              <button
+                type="button"
+                className="db-btn db-btn--plain admin-btn"
+                disabled={current === pageCount - 1}
+                onClick={() => setPage(current + 1)}
+              >
+                Next ›
+              </button>
+            </nav>
+          )}
+        </div>
       </div>
     </section>
   )

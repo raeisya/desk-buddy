@@ -52,7 +52,9 @@
 .admin-off td { color: var(--rl-muted); background: var(--rl-paper); }
 .admin-off .admin-sprite { opacity: 0.45; filter: grayscale(1); }
 .admin-empty { text-align: center !important; padding: 24px !important; }
-.admin-foot { margin: 0; padding: 10px 16px; font-size: 14px; }
+.admin-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 10px 16px; font-size: 14px; }
+.admin-foot p { margin: 0; }
+.admin-pager { display: flex; align-items: center; gap: 10px; }
 
 @media (max-width: 760px) {
   .admin-table { font-size: 15px; }
