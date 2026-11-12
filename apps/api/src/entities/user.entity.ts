@@ -1,5 +1,5 @@
 import { Column, Entity, PrimaryColumn } from 'typeorm';
-import type { Role } from '../common/contracts';
+import type { AvatarConfig, Role } from '../common/contracts';
 
 @Entity('users')
 export class User {
@@ -24,4 +24,8 @@ export class User {
   /** Admin can deactivate someone (left, never onboarded): hidden from login and counts, desk freed. */
   @Column({ type: 'boolean', default: true })
   active!: boolean;
+
+  /** Character customization: the look this person chose. null = default preset for their id. */
+  @Column({ type: 'jsonb', nullable: true })
+  avatar!: AvatarConfig | null;
 }

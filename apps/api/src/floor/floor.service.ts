@@ -6,7 +6,8 @@ import type { FloorResponse, PersonRef } from '../common/contracts';
 import { Booking, Desk, Presence, User } from '../entities';
 import { deriveDeskState } from './derive-desk-state';
 
-const toRef = (u: User | null | undefined): PersonRef | null => (u ? { id: u.id, name: u.name, team: u.team } : null);
+const toRef = (u: User | null | undefined): PersonRef | null =>
+  u ? { id: u.id, name: u.name, team: u.team, avatar: u.avatar ?? null } : null;
 
 @Injectable()
 export class FloorService {
