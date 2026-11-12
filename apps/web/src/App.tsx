@@ -18,19 +18,15 @@ interface Suggestion {
 }
 
 export default function App() {
-  const { walkers, hiddenSeated, start: startWalks } = useWalkers()
-  // People who arrive walk in from the door; people who leave (WFH, MC…) walk out.
+  const { walkers, hiddenSeated, start: startWalks, cancelAll: cancelWalks } = useWalkers()
+  // People who arrive walk in from the door, leavers walk out, desk-switchers walk across.
   const onFloorChange = useCallback(
-    (prev: FloorResponse, next: FloorResponse) =>
-      startWalks(
-        presenceWalks(prev.desks, next.desks).map((w) => ({
-          personId: w.personId,
-          name: w.name,
-          walk: w.walk,
-          hideSeated: w.direction === 'in',
-        })),
-      ),
-    [startWalks],
+    (prev: FloorResponse, next: FloorResponse) => {
+      const { walks, bulk } = presenceWalks(prev.desks, next.desks)
+      if (bulk) return cancelWalks()
+      startWalks(walks.map((w) => ({ personId: w.personId, name: w.name, walk: w.walk, hideSeated: w.direction === 'in' })))
+    },
+    [startWalks, cancelWalks],
   )
   const { floor, error, live, reload } = useFloor(onFloorChange)
   const { persona, users, setPersona } = usePersona()

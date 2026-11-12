@@ -79,6 +79,30 @@ export function walkOut(d: FloorDesk): Walk {
   return { route, from: routeLength(route), to: 0 }
 }
 
+/** The open corridor between the top and bottom pods (y 304–464): clear from wall to wall. */
+const inMiddleCorridor = (y: number) => y > 304 && y < 464
+
+/**
+ * Seated at desk A, moving to desk B. If both chairs open onto the same aisle, or both onto the middle
+ * corridor, walk straight across it; otherwise down to the hub row, along it, and up to B. No door.
+ */
+export function walkBetween(a: FloorDesk, b: FloorDesk): Walk {
+  const fa = seatFeet(a)
+  const fb = seatFeet(b)
+  const ya = aisleY(a)
+  const yb = aisleY(b)
+  const route =
+    ya === yb || (inMiddleCorridor(ya) && inMiddleCorridor(yb))
+      ? dedupe([fa, { x: fa.x, y: ya }, { x: fb.x, y: ya }, { x: fb.x, y: yb }, fb])
+      : dedupe([fa, ...seatToHub(a), ...[...seatToHub(b)].reverse(), fb])
+  return { route, from: 0, to: routeLength(route) }
+}
+
+const onHub = (p: Point) => Math.abs(p.y - HUB_Y) < 0.5
+function dedupe(points: Point[]): Point[] {
+  return points.filter((p, i) => i === 0 || dist(points[i - 1], p) > 0.5)
+}
+
 function dirOf(a: Point, b: Point): Direction {
   const dx = b.x - a.x
   const dy = b.y - a.y
@@ -130,14 +154,52 @@ export function poseAt(w: Walk, ms: number): WalkPose {
 const sameRoute = (a: Point[], b: Point[]) =>
   a.length === b.length && a.every((p, i) => Math.abs(p.x - b[i].x) < 0.5 && Math.abs(p.y - b[i].y) < 0.5)
 
+/** Index i of the segment route[i] → route[i+1] that contains distance s. */
+function segmentIndex(route: Point[], s: number): number {
+  let left = Math.max(0, s)
+  for (let i = 0; i < route.length - 1; i++) {
+    const d = dist(route[i], route[i + 1])
+    if (left <= d) return i
+    left -= d
+  }
+  return Math.max(0, route.length - 2)
+}
+
+/** From distance s on a route, the waypoints that get you onto the hub row (empty if already on it). */
+function toHub(route: Point[], s: number): Point[] {
+  const here = pointAlong(route, s).p
+  if (onHub(here)) return []
+  const i = segmentIndex(route, s)
+  const lastHub = route.reduce((k, p, j) => (onHub(p) ? j : k), -1)
+  if (lastHub < 0) return [] // no hub on this route (shouldn't happen)
+  if (i >= lastHub) return route.slice(lastHub, i + 1).reverse() // seat side: go back towards the hub
+  const firstAhead = route.findIndex((p, j) => j > i && onHub(p))
+  return route.slice(i + 1, firstAhead + 1) // door side: go forward onto the hub
+}
+
+/** From the hub row to where `next` is heading: its seat (walking in) or the door (walking out). */
+function fromHub(next: Walk): Point[] {
+  const r = next.route
+  if (next.to >= next.from) {
+    const lastHub = r.reduce((k, p, j) => (onHub(p) ? j : k), -1)
+    return r.slice(Math.max(0, lastHub))
+  }
+  const firstHub = r.findIndex(onHub)
+  return r.slice(0, firstHub + 1).reverse()
+}
+
 /**
- * Someone mid-walk gets a new walk. On the same route (same desk: took it, left, took it again…)
- * they just carry on from where they stand towards the new end. A different route (moved desks)
- * replaces the walk.
+ * Someone mid-walk gets a new walk.
+ * - Same route (took the desk, left, took it again…): carry on from where they stand towards the new end.
+ * - Different route (switched desk, or left for the door from a switched route): walk from where they
+ *   stand back onto the hub row along the route they're on, then to the new destination. No teleports.
  */
 export function redirect(old: Walk, elapsedMs: number, next: Walk): Walk {
-  if (!sameRoute(old.route, next.route)) return next
-  return { route: next.route, from: positionAt(old, elapsedMs), to: next.to }
+  const s = positionAt(old, elapsedMs)
+  if (sameRoute(old.route, next.route)) return { route: next.route, from: s, to: next.to }
+  const here = pointAlong(old.route, s).p
+  const route = dedupe([here, ...toHub(old.route, s), ...fromHub(next)])
+  return { route, from: 0, to: routeLength(route) }
 }
 
 export interface PresenceWalk {
@@ -153,9 +215,9 @@ const MAX_ANIMATED_CHANGES = 6
 
 /**
  * Who arrived or left between two floor snapshots → walks. Arrivals walk in from the door to their
- * seat; leavers walk from their old seat out of the door. Someone moving desks walks in to the new one.
+ * seat; leavers walk from their old seat out of the door; someone moving desks walks across from A to B.
  */
-export function presenceWalks(prev: FloorDesk[], next: FloorDesk[]): PresenceWalk[] {
+export function presenceWalks(prev: FloorDesk[], next: FloorDesk[]): { walks: PresenceWalk[]; bulk: boolean } {
   const seatedIn = (desks: FloorDesk[]) => {
     const m = new Map<string, { desk: FloorDesk; name: string }>()
     for (const d of desks) {
@@ -170,10 +232,12 @@ export function presenceWalks(prev: FloorDesk[], next: FloorDesk[]): PresenceWal
   const walks: PresenceWalk[] = []
   for (const [id, now] of after) {
     const was = before.get(id)
-    if (!was || was.desk.id !== now.desk.id) walks.push({ personId: id, name: now.name, walk: walkIn(now.desk), direction: 'in' })
+    if (!was) walks.push({ personId: id, name: now.name, walk: walkIn(now.desk), direction: 'in' })
+    else if (was.desk.id !== now.desk.id) walks.push({ personId: id, name: now.name, walk: walkBetween(was.desk, now.desk), direction: 'in' })
   }
   for (const [id, was] of before) {
     if (!after.has(id)) walks.push({ personId: id, name: was.name, walk: walkOut(was.desk), direction: 'out' })
   }
-  return walks.length > MAX_ANIMATED_CHANGES ? [] : walks
+  // A reload/reseed: don't animate, and the caller should stop any walks still in flight.
+  return walks.length > MAX_ANIMATED_CHANGES ? { walks: [], bulk: true } : { walks, bulk: false }
 }

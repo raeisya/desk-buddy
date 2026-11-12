@@ -138,5 +138,4 @@
 }
 .px-avatar.walking { z-index: 6; }
 .px-walker .px-name { z-index: 7; }
-.px-walker .px-bubble { z-index: 8; }
 @media (prefers-reduced-motion: reduce) { .px-avatar.typing { animation: none; } }

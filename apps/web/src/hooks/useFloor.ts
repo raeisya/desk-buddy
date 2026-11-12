@@ -33,6 +33,7 @@ export function useFloor(onChange?: (prev: FloorResponse, next: FloorResponse) =
       setFloor(next)
       setError(null)
     } catch (e) {
+      if (seq < appliedRef.current) return // an outdated load failed; the floor on screen is newer
       setError((e as Error).message)
     }
   }, [])

@@ -74,6 +74,9 @@ export function useWalkers() {
     })
   }, [])
 
+  /** Stop every walk (bulk reload: the map jumps straight to the new state). */
+  const cancelAll = useCallback(() => setWalks((ws) => (ws.length ? [] : ws)), [])
+
   const { walk: walkFrames, idle } = CHARACTER_SHEET.frames
   const views: WalkerView[] = walks.map((w) => {
     const elapsed = now - w.startedAt
@@ -84,5 +87,5 @@ export function useWalkers() {
   })
   const hiddenSeated = new Set(walks.filter((w) => w.hideSeated).map((w) => w.personId))
 
-  return { walkers: views, hiddenSeated, start }
+  return { walkers: views, hiddenSeated, start, cancelAll }
 }
