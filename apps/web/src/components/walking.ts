@@ -13,10 +13,15 @@ export interface Point {
   y: number
 }
 
-/** A walk: start here, then straight lines through each waypoint in turn. */
+/**
+ * A walk is a stretch of one fixed ROUTE: the polyline from the door to a seat. `from`/`to` are
+ * distances along it (0 = door, length = seat). Walking in is 0 → length, out is length → 0, so
+ * someone who changes their mind any number of times just reverses from where they stand.
+ */
 export interface Walk {
-  start: Point
-  path: Point[]
+  route: Point[]
+  from: number
+  to: number
 }
 
 export const WALK_SPEED = 200 // map px per second (a desk is 64 px)
@@ -56,15 +61,23 @@ function seatToHub(d: FloorDesk): Point[] {
   ]
 }
 
-export function walkOut(d: FloorDesk): Walk {
-  return { start: seatFeet(d), path: [...seatToHub(d), { x: DOOR.x, y: HUB_Y }, DOOR] }
+/** Door → hub row → gap → aisle → seat, for this desk. */
+function routeTo(d: FloorDesk): Point[] {
+  return [DOOR, { x: DOOR.x, y: HUB_Y }, ...[seatFeet(d), ...seatToHub(d)].reverse()]
 }
+
+const dist = (a: Point, b: Point) => Math.hypot(b.x - a.x, b.y - a.y)
+const routeLength = (route: Point[]) => route.slice(1).reduce((sum, p, i) => sum + dist(route[i], p), 0)
 
 export function walkIn(d: FloorDesk): Walk {
-  return { start: DOOR, path: [seatFeet(d), ...seatToHub(d), { x: DOOR.x, y: HUB_Y }].reverse() }
+  const route = routeTo(d)
+  return { route, from: 0, to: routeLength(route) }
 }
 
-const segMs = (a: Point, b: Point) => (Math.hypot(b.x - a.x, b.y - a.y) / WALK_SPEED) * 1000
+export function walkOut(d: FloorDesk): Walk {
+  const route = routeTo(d)
+  return { route, from: routeLength(route), to: 0 }
+}
 
 function dirOf(a: Point, b: Point): Direction {
   const dx = b.x - a.x
@@ -74,13 +87,29 @@ function dirOf(a: Point, b: Point): Direction {
 }
 
 export function walkDuration(w: Walk): number {
-  let at = w.start
-  let total = 0
-  for (const to of w.path) {
-    total += segMs(at, to)
-    at = to
+  return (Math.abs(w.to - w.from) / WALK_SPEED) * 1000
+}
+
+/** The point `s` px along the route, and the segment it's on (for facing). */
+function pointAlong(route: Point[], s: number): { p: Point; a: Point; b: Point } {
+  let left = Math.max(0, s)
+  for (let i = 1; i < route.length; i++) {
+    const a = route[i - 1]
+    const b = route[i]
+    const d = dist(a, b)
+    if (left <= d || i === route.length - 1) {
+      const f = d > 0 ? Math.min(1, left / d) : 0
+      return { p: { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f }, a, b }
+    }
+    left -= d
   }
-  return total
+  return { p: route[0], a: route[0], b: route[0] }
+}
+
+/** Distance along the route `ms` into the walk. */
+const positionAt = (w: Walk, ms: number) => {
+  const travelled = Math.min(Math.abs(w.to - w.from), (Math.max(0, ms) / 1000) * WALK_SPEED)
+  return w.from + Math.sign(w.to - w.from) * travelled
 }
 
 export interface WalkPose {
@@ -91,45 +120,24 @@ export interface WalkPose {
 
 /** Where the walker is `ms` into the walk. */
 export function poseAt(w: Walk, ms: number): WalkPose {
-  let at = w.start
-  let left = Math.max(0, ms)
-  let lastDir: Direction = 'down'
-  for (const to of w.path) {
-    const d = segMs(at, to)
-    const dir: Direction = d > 0 ? dirOf(at, to) : lastDir
-    if (left < d) {
-      const f = left / d
-      return { feet: { x: at.x + (to.x - at.x) * f, y: at.y + (to.y - at.y) * f }, dir, moving: true }
-    }
-    left -= d
-    at = to
-    lastDir = dir
-  }
-  return { feet: at, dir: lastDir, moving: false }
+  const s = positionAt(w, ms)
+  const { p, a, b } = pointAlong(w.route, s)
+  const forward = w.to >= w.from
+  const dir = dist(a, b) > 0 ? (forward ? dirOf(a, b) : dirOf(b, a)) : 'down'
+  return { feet: p, dir, moving: ms < walkDuration(w) }
 }
 
-const same = (a: Point, b: Point) => Math.abs(a.x - b.x) < 0.5 && Math.abs(a.y - b.y) < 0.5
-const end = (w: Walk): Point => w.path[w.path.length - 1] ?? w.start
+const sameRoute = (a: Point[], b: Point[]) =>
+  a.length === b.length && a.every((p, i) => Math.abs(p.x - b[i].x) < 0.5 && Math.abs(p.y - b[i].y) < 0.5)
 
 /**
- * Someone mid-walk gets a new walk. If it heads back where they came from (walking in, then they
- * leave — or the reverse), turn round and retrace the route walked so far, from where they are now,
- * instead of teleporting to the chair or the door. Otherwise the new walk replaces the old one.
+ * Someone mid-walk gets a new walk. On the same route (same desk: took it, left, took it again…)
+ * they just carry on from where they stand towards the new end. A different route (moved desks)
+ * replaces the walk.
  */
 export function redirect(old: Walk, elapsedMs: number, next: Walk): Walk {
-  if (!same(end(next), old.start)) return next
-  const here = poseAt(old, elapsedMs).feet
-  const walked: Point[] = [old.start]
-  let at = old.start
-  let left = Math.max(0, elapsedMs)
-  for (const to of old.path) {
-    const d = segMs(at, to)
-    if (left < d) break
-    left -= d
-    at = to
-    walked.push(at)
-  }
-  return { start: here, path: walked.reverse() }
+  if (!sameRoute(old.route, next.route)) return next
+  return { route: next.route, from: positionAt(old, elapsedMs), to: next.to }
 }
 
 export interface PresenceWalk {
