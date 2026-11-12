@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FloorResponse } from './api/contracts'
 import { DeskPanel } from './components/DeskPanel'
 import { Legend } from './components/Legend'
 import { PixelOffice } from './components/PixelOffice'
 import { isFree, suggestSeat } from './components/seating'
-import { presenceWalks } from './components/walking'
+import { planKopiRun } from './components/kopi'
+import { presenceWalks, walkDuration } from './components/walking'
 import { useFloor } from './hooks/useFloor'
 import { useWalkers } from './hooks/useWalkers'
 import { FindSeat } from './pages/FindSeat'
@@ -24,7 +25,7 @@ interface Suggestion {
 }
 
 export default function App() {
-  const { walkers, hiddenSeated, start: startWalks, cancelAll: cancelWalks } = useWalkers()
+  const { walkers, hiddenSeated, walkingIds, start: startWalks, cancelAll: cancelWalks } = useWalkers()
   // People who arrive walk in from the door, leavers walk out, desk-switchers walk across.
   const onFloorChange = useCallback(
     (prev: FloorResponse, next: FloorResponse) => {
@@ -39,6 +40,9 @@ export default function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null)
   const [tab, setTab] = useState<AppTab>('map')
+  const [kopiMessage, setKopiMessage] = useState<string | null>(null)
+  const kopiTimer = useRef<number | undefined>(undefined)
+  useEffect(() => () => window.clearTimeout(kopiTimer.current), []) // no stray timer after unmount
   // Look the desk up in the latest floor so the panel updates live when state changes.
   const selected = floor?.desks.find((d) => d.id === selectedId) ?? null
   const narrow = useNarrow()
@@ -58,6 +62,18 @@ export default function App() {
     const focusId = suggestedId ?? (result.ok ? null : (result.deskId ?? null))
     setSuggestion({ personaId: persona.id, deskId: suggestedId, note: result.note })
     if (focusId) setSelectedId(focusId)
+  }
+
+  // Kopi Easter Egg (challenge round): click the KOPI counter → your teammates who are in walk over
+  // for a kopi and back. One run at a time.
+  function kopiRun() {
+    if (!floor || !persona || kopiMessage) return
+    const run = planKopiRun(floor.desks, persona, walkingIds)
+    startWalks(run.crew.map((c) => ({ personId: c.person.id, name: c.person.name, walk: c.walk, hideSeated: true })))
+    setKopiMessage(run.message)
+    const longest = Math.max(4000, ...run.crew.map((c) => walkDuration(c.walk)))
+    window.clearTimeout(kopiTimer.current)
+    kopiTimer.current = window.setTimeout(() => setKopiMessage(null), longest + 300)
   }
 
   // Phone: the desk panel sits below the map, so bring it into view when a desk is picked.
@@ -86,6 +102,8 @@ export default function App() {
       onLogout={() => {
         setSelectedId(null)
         setTab('map')
+        window.clearTimeout(kopiTimer.current) // a kopi run belongs to the persona who started it
+        setKopiMessage(null)
         setPersona(null) // → login page
       }}
     />
@@ -111,6 +129,8 @@ export default function App() {
           suggestedId={activeSuggestion?.deskId ?? null}
           walkers={walkers}
           hiddenSeated={hiddenSeated}
+          kopiMessage={kopiMessage}
+          onKopi={kopiRun}
           onSelect={(d) => setSelectedId(d.id)}
         />
       </MapFrame>
@@ -125,6 +145,7 @@ export default function App() {
       note={activeSuggestion?.deskId === selected.id ? activeSuggestion.note : undefined}
       onClose={() => setSelectedId(null)}
       onChanged={() => void reload()}
+      onOpenMe={() => setTab('me')}
     />
   ) : (
     <PanelHint />

@@ -22,6 +22,10 @@ export interface Walk {
   route: Point[]
   from: number
   to: number
+  /** Optional stop at `to`: wait there (facing `face`, showing `bubble`), then walk on to `back`. */
+  hold?: { ms: number; face: Direction; bubble?: string; back: number }
+  /** Map px per second; defaults to WALK_SPEED. */
+  speed?: number
 }
 
 export const WALK_SPEED = 200 // map px per second (a desk is 64 px)
@@ -98,6 +102,17 @@ export function walkBetween(a: FloorDesk, b: FloorDesk): Walk {
   return { route, from: 0, to: routeLength(route) }
 }
 
+/** Seat → corridor → `spot` (e.g. the kopi counter), wait there, then back to the seat. */
+export function tripTo(
+  d: FloorDesk,
+  spot: Point,
+  wait: { ms: number; face: Direction; bubble?: string },
+  speed = WALK_SPEED,
+): Walk {
+  const route = dedupe([seatFeet(d), ...seatToHub(d), { x: spot.x, y: HUB_Y }, spot])
+  return { route, from: 0, to: routeLength(route), hold: { ...wait, back: 0 }, speed }
+}
+
 const onHub = (p: Point) => Math.abs(p.y - HUB_Y) < 0.5
 function dedupe(points: Point[]): Point[] {
   return points.filter((p, i) => i === 0 || dist(points[i - 1], p) > 0.5)
@@ -110,8 +125,10 @@ function dirOf(a: Point, b: Point): Direction {
   return dy > 0 ? 'down' : 'up'
 }
 
+const legMs = (a: number, b: number, speed = WALK_SPEED) => (Math.abs(b - a) / speed) * 1000
+
 export function walkDuration(w: Walk): number {
-  return (Math.abs(w.to - w.from) / WALK_SPEED) * 1000
+  return legMs(w.from, w.to, w.speed) + (w.hold ? w.hold.ms + legMs(w.to, w.hold.back, w.speed) : 0)
 }
 
 /** The point `s` px along the route, and the segment it's on (for facing). */
@@ -130,23 +147,40 @@ function pointAlong(route: Point[], s: number): { p: Point; a: Point; b: Point }
   return { p: route[0], a: route[0], b: route[0] }
 }
 
+/** Where along one leg (a → b) after `ms` of walking it. */
+const along = (a: number, b: number, ms: number, speed = WALK_SPEED) =>
+  a + Math.sign(b - a) * Math.min(Math.abs(b - a), (Math.max(0, ms) / 1000) * speed)
+
+type Phase = { kind: 'leg'; a: number; b: number; ms: number } | { kind: 'hold'; at: number; hold: NonNullable<Walk['hold']> }
+
+/** Which part of the walk we're in at `ms`: first leg, the stop, or the leg back. */
+function phaseAt(w: Walk, ms: number): Phase {
+  const first = legMs(w.from, w.to, w.speed)
+  if (!w.hold || ms < first) return { kind: 'leg', a: w.from, b: w.to, ms }
+  if (ms < first + w.hold.ms) return { kind: 'hold', at: w.to, hold: w.hold }
+  return { kind: 'leg', a: w.to, b: w.hold.back, ms: ms - first - w.hold.ms }
+}
+
 /** Distance along the route `ms` into the walk. */
 const positionAt = (w: Walk, ms: number) => {
-  const travelled = Math.min(Math.abs(w.to - w.from), (Math.max(0, ms) / 1000) * WALK_SPEED)
-  return w.from + Math.sign(w.to - w.from) * travelled
+  const ph = phaseAt(w, ms)
+  return ph.kind === 'hold' ? ph.at : along(ph.a, ph.b, ph.ms, w.speed)
 }
 
 export interface WalkPose {
   feet: Point
   dir: Direction
   moving: boolean
+  bubble?: string
 }
 
 /** Where the walker is `ms` into the walk. */
 export function poseAt(w: Walk, ms: number): WalkPose {
-  const s = positionAt(w, ms)
+  const ph = phaseAt(w, ms)
+  if (ph.kind === 'hold') return { feet: pointAlong(w.route, ph.at).p, dir: ph.hold.face, moving: false, bubble: ph.hold.bubble }
+  const s = along(ph.a, ph.b, ph.ms, w.speed)
   const { p, a, b } = pointAlong(w.route, s)
-  const forward = w.to >= w.from
+  const forward = ph.b >= ph.a
   const dir = dist(a, b) > 0 ? (forward ? dirOf(a, b) : dirOf(b, a)) : 'down'
   return { feet: p, dir, moving: ms < walkDuration(w) }
 }
@@ -186,7 +220,7 @@ function toHub(route: Point[], s: number): Point[] {
   }
   if (i >= lastHub) return route.slice(lastHub, i + 1).reverse() // seat side: go back towards the hub
   const firstAhead = route.findIndex((p, j) => j > i && onHub(p))
-  return route.slice(i + 1, firstAhead + 1) // door side: go forward onto the hub
+  return route.slice(i + 1, firstAhead + 1) // before the route's last hub point: carry on forward onto the hub row
 }
 
 /** From the hub row to where `next` is heading: its seat (walking in) or the door (walking out). */
@@ -213,7 +247,7 @@ function fromHub(next: Walk): Point[] {
  */
 export function redirect(old: Walk, elapsedMs: number, next: Walk): Walk {
   const s = positionAt(old, elapsedMs)
-  if (sameRoute(old.route, next.route)) return { route: next.route, from: s, to: next.to }
+  if (sameRoute(old.route, next.route)) return { ...next, from: s }
   const here = pointAlong(old.route, s).p
   const route = dedupe([here, ...toHub(old.route, s), ...fromHub(next)])
   return { route, from: 0, to: routeLength(route) }

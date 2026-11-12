@@ -4,6 +4,7 @@ import type { WalkerView } from '../hooks/useWalkers'
 import { CHARACTER_SHEET, frameStyle, seatPosition, variantFor } from '../theme/characters'
 import { DESK_STATE_STYLE } from './deskStyles'
 import { shortName } from './displayName'
+import { KOPI_COUNTER, KOPI_MACHINE } from './kopi'
 import { OFFICE_MAP } from './officeMap'
 import { ownerAway, seatedPerson } from './seating'
 
@@ -36,6 +37,10 @@ interface Props {
   walkers?: WalkerView[]
   /** People whose seated sprite is hidden because they're walking. */
   hiddenSeated?: Set<string>
+  /** Kopi Easter Egg: banner text while a kopi run is on (steam rises from the machine). */
+  kopiMessage?: string | null
+  /** Kopi Easter Egg: hidden hit area over the KOPI counter in the pantry. */
+  onKopi?: () => void
   onSelect?: (desk: FloorDesk) => void
 }
 
@@ -44,7 +49,17 @@ interface Props {
  * sprites and "Away" bubbles. Everything is placed in map pixels (1280×768) as percentages, so the
  * whole office scales together.
  */
-export function PixelOffice({ desks, selectedId, youId, suggestedId, walkers = [], hiddenSeated, onSelect }: Props) {
+export function PixelOffice({
+  desks,
+  selectedId,
+  youId,
+  suggestedId,
+  walkers = [],
+  hiddenSeated,
+  kopiMessage,
+  onKopi,
+  onSelect,
+}: Props) {
   if (desks.length === 0) return <p className="muted">No desks yet — check the seed data.</p>
 
   // Paint top-to-bottom so lower desks' people overlap the row above, not the other way round.
@@ -134,14 +149,52 @@ export function PixelOffice({ desks, selectedId, youId, suggestedId, walkers = [
                 ...frameStyle(variantFor(w.personId), w.dir, w.column),
               }}
             />
-            <span
-              className={`px-name facing-down${w.personId === youId ? ' is-you' : ''}`}
-              style={{ left: pct(w.x + CHARACTER_SHEET.frameWidth / 2, MAP_W), top: pct(w.y + NAME_DROP, MAP_H) }}
-            >
-              {w.personId === youId ? 'YOU' : shortName(w.name)}
-            </span>
+            {!w.bubble && (
+              // Stopped with a bubble (kopi counter): the bubble replaces the name, or a crowd's tags overlap.
+              <span
+                className={`px-name facing-down${w.personId === youId ? ' is-you' : ''}`}
+                style={{ left: pct(w.x + CHARACTER_SHEET.frameWidth / 2, MAP_W), top: pct(w.y + NAME_DROP, MAP_H) }}
+              >
+                {w.personId === youId ? 'YOU' : shortName(w.name)}
+              </span>
+            )}
+            {w.bubble && (
+              <span
+                className="px-bubble facing-down kopi"
+                style={{ left: pct(w.x + CHARACTER_SHEET.frameWidth / 2, MAP_W), top: pct(w.y - 2, MAP_H) }}
+              >
+                {w.bubble}
+              </span>
+            )}
           </div>
         ))}
+      {onKopi && (
+        // Easter egg: looks like part of the drawing until you click the KOPI counter.
+        <button
+          type="button"
+          className="px-kopi-hit"
+          aria-label="Kopi counter"
+          onClick={onKopi}
+          style={{
+            left: pct(KOPI_COUNTER.x, MAP_W),
+            top: pct(KOPI_COUNTER.y, MAP_H),
+            width: pct(KOPI_COUNTER.w, MAP_W),
+            height: pct(KOPI_COUNTER.h, MAP_H),
+          }}
+        />
+      )}
+      {kopiMessage && (
+        <>
+          <div className="px-steam" aria-hidden="true" style={{ left: pct(KOPI_MACHINE.x, MAP_W), top: pct(KOPI_MACHINE.y, MAP_H) }}>
+            <span />
+            <span />
+            <span />
+          </div>
+          <div className="px-kopi-banner" role="status">
+            {kopiMessage}
+          </div>
+        </>
+      )}
     </div>
   )
 }
