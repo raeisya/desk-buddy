@@ -41,6 +41,7 @@ export class PresenceService {
       ['userId', 'date'],
     );
     this.events.emit({ type: 'floor-changed', date });
+    this.events.presenceChanged({ userId: input.userId, date, status: input.status, source: input.source ?? 'manual' });
     return this.repo.findOneByOrFail({ userId: input.userId, date });
   }
 

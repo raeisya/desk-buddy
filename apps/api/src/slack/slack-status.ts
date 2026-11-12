@@ -16,6 +16,29 @@ const IGNORED_STATUS_EMOJI = new Set([
   'office', // "in the office" is the default anyway
 ]);
 
+/** Suffix on statuses DeskBuddy sets in Slack, so the echo back to us is recognised and ignored. */
+export const OWN_SUFFIX = '· DeskBuddy';
+
+export function isOwnStatus(profile: SlackProfileStatus): boolean {
+  return (profile.status_text ?? '').trim().endsWith(OWN_SUFFIX);
+}
+
+/** What DeskBuddy writes to Slack for a status set on the Me page (null = clear it). */
+export function slackStatusFor(status: PresenceStatus): { emoji: string; text: string } | null {
+  switch (status) {
+    case 'WFH':
+      return { emoji: ':house_with_garden:', text: `Working remotely ${OWN_SUFFIX}` };
+    case 'MC':
+      return { emoji: ':face_with_thermometer:', text: `Out sick ${OWN_SUFFIX}` };
+    case 'LEAVE':
+      return { emoji: ':palm_tree:', text: `On leave ${OWN_SUFFIX}` };
+    case 'OUTSTATION':
+      return { emoji: ':briefcase:', text: `Outstation ${OWN_SUFFIX}` };
+    case 'IN_OFFICE':
+      return null;
+  }
+}
+
 /** Longest stretch one status can cover, in calendar days from today. */
 export const MAX_STATUS_DAYS = 14;
 

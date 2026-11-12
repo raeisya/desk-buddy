@@ -42,8 +42,29 @@ interface Props {
  * The usual way to update is still a Slack post; this is for when the AI got it wrong.
  * Privacy: only you see your own reason here; colleagues see "Away".
  */
+/** Back from "Connect Slack": read and clear `#slack-status=ok|error` once. */
+function readSlackReturn(): 'ok' | 'error' | null {
+  const m = window.location.hash.match(/^#slack-status=(ok|error)$/)
+  if (!m) return null
+  history.replaceState(null, '', window.location.pathname + window.location.search)
+  return m[1] as 'ok' | 'error'
+}
+
 export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
   const [busy, setBusy] = useState<PresenceStatus | null>(null)
+  // Slack status sync: connected = a status set here is mirrored to the person's Slack status.
+  const [slackLinked, setSlackLinked] = useState<boolean | null>(null)
+  const [slackReturn] = useState(readSlackReturn)
+  useEffect(() => {
+    let alive = true
+    api.getSlackStatusLink(persona.id).then(
+      (r) => alive && setSlackLinked(r.connected),
+      () => alive && setSlackLinked(false),
+    )
+    return () => {
+      alive = false
+    }
+  }, [persona.id])
   const [lastSet, setLastSet] = useState<PresenceStatus | null>(null)
   // Your real status today (incl. one set by a Slack post); the floor only says in/out.
   // App remounts this page per persona (key), so it can never show someone else's reason.
@@ -116,7 +137,7 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
     try {
       await api.setPresence(persona.id, status)
       setLastSet(status)
-      setMessage('Saved. The map has been updated.')
+      setMessage(slackLinked ? 'Saved. The map and your Slack status are updated.' : 'Saved. The map has been updated.')
       onChanged()
     } catch (e) {
       setMessage((e as Error).message)
@@ -290,9 +311,27 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
             <path d="M2 3h14v9H7l-4 3v-3H2z" />
           </svg>
           <span>
-            Easier still: post in your team's Slack channel, e.g. <q>WFH today</q>. DeskBuddy reads it.
+            Easier still: post in your team's Slack channel, e.g. <q>WFH today</q>, or set your Slack status. DeskBuddy reads both.
           </span>
         </p>
+        <div className="me-slack me-slack--sync">
+          {slackLinked ? (
+            <span className="me-sync-on">✓ Synced: changing your status here updates your Slack status too.</span>
+          ) : (
+            <>
+              <span>Want your Slack status to follow DeskBuddy?</span>
+              <a className="db-btn db-btn--secondary me-sync-btn" href="/api/auth/slack/status">
+                Connect Slack
+              </a>
+            </>
+          )}
+          {slackReturn === 'error' && (
+            <span className="error" role="alert">
+              Couldn't connect Slack. Sign in with your linked Slack account and try again.
+            </span>
+          )}
+          {slackReturn === 'ok' && slackLinked && <span className="me-msg" role="status">Slack connected.</span>}
+        </div>
       </div>
     </section>
   )

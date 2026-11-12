@@ -84,3 +84,8 @@
   .me-seg__btn:nth-child(4) { border-left: 0; }
   .me-slack { padding: 12px 16px; }
 }
+
+/* Slack status sync row (Me) */
+.me-slack--sync { flex-wrap: wrap; align-items: center; justify-content: space-between; border-top: 1px solid var(--rl-line-soft); }
+.me-sync-btn { min-height: 40px; padding: 0 14px; font-size: 15px; text-decoration: none; display: inline-flex; align-items: center; }
+.me-sync-on { color: var(--rl-ok-ink); font-weight: 600; }

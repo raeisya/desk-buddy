@@ -28,4 +28,11 @@ export class User {
   /** Character customization: the look this person chose. null = default preset for their id. */
   @Column({ type: 'jsonb', nullable: true })
   avatar!: AvatarConfig | null;
+
+  /**
+   * Slack user token (users.profile:write) from "Connect Slack" on the Me page, so a status changed in
+   * DeskBuddy is mirrored to Slack. Never selected by default and never sent to the browser.
+   */
+  @Column({ name: 'slack_user_token', type: 'varchar', nullable: true, select: false })
+  slackUserToken!: string | null;
 }
