@@ -50,12 +50,7 @@ export function HodDashboard({ floor, persona }: Props) {
 
   return (
     <section className="hod">
-      <PageHeader
-        title="Team today"
-        meta={fmtDay.format(day(today.date))}
-        note="Counts per team, no names. Absence reasons stay on this page."
-        chip="HOD only"
-      />
+      <PageHeader title="Team today" meta={fmtDay.format(day(today.date))} />
 
       <div className="hod-tiles">
         <Tile label="In office" value={inToday} sub={`of ${cap.staff} staff · ${silent} didn't post, counted in`} />
