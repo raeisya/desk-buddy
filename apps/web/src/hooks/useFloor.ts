@@ -1,16 +1,28 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../api/client'
 import type { FloorResponse } from '../api/contracts'
 
-/** Today's floor, kept live: refetches on every server event and once a minute (so the release cutoff shows up). */
-export function useFloor() {
+/**
+ * Today's floor, kept live: refetches on every server event and once a minute.
+ * `onChange(prev, next)` runs for every fetched floor after the first, before it's shown — used to
+ * animate people arriving and leaving.
+ */
+export function useFloor(onChange?: (prev: FloorResponse, next: FloorResponse) => void) {
   const [floor, setFloor] = useState<FloorResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [live, setLive] = useState(false)
+  const prevRef = useRef<FloorResponse | null>(null)
+  const onChangeRef = useRef(onChange)
+  useEffect(() => {
+    onChangeRef.current = onChange
+  }, [onChange])
 
   const load = useCallback(async () => {
     try {
-      setFloor(await api.getFloor())
+      const next = await api.getFloor()
+      if (prevRef.current) onChangeRef.current?.(prevRef.current, next)
+      prevRef.current = next
+      setFloor(next)
       setError(null)
     } catch (e) {
       setError((e as Error).message)
