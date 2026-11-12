@@ -1,0 +1,12 @@
+[
+  { "id": "u-aina",    "name": "Aina Zulkifli",  "email": "aina@acme.example",    "team": "Platform", "role": "hod",   "slackId": null },
+  { "id": "u-hafiz",   "name": "Hafiz Rahim",    "email": "hafiz@acme.example",   "team": "Platform", "role": "staff", "slackId": null },
+  { "id": "u-meiling", "name": "Tan Mei Ling",   "email": "meiling@acme.example", "team": "Platform", "role": "staff", "slackId": null },
+  { "id": "u-arjun",   "name": "Arjun Pillai",   "email": "arjun@acme.example",   "team": "Platform", "role": "staff", "slackId": null },
+  { "id": "u-danial",  "name": "Danial Hakim",   "email": "danial@acme.example",  "team": "Platform", "role": "staff", "slackId": null },
+  { "id": "u-farah",   "name": "Farah Hanim",    "email": "farah@acme.example",   "team": "Data",     "role": "hod",   "slackId": null },
+  { "id": "u-weijie",  "name": "Lim Wei Jie",    "email": "weijie@acme.example",  "team": "Data",     "role": "staff", "slackId": null },
+  { "id": "u-syafiq",  "name": "Syafiq Azman",   "email": "syafiq@acme.example",  "team": "Data",     "role": "staff", "slackId": null },
+  { "id": "u-priya",   "name": "Priya Menon",    "email": "priya@acme.example",   "team": "Data",     "role": "staff", "slackId": null },
+  { "id": "u-kavitha", "name": "Kavitha Rao",    "email": "kavitha@acme.example", "team": "Data",     "role": "staff", "slackId": null }
+]

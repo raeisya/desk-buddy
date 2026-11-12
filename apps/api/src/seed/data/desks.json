@@ -1,0 +1,12 @@
+[
+  { "id": "D-01", "x": 40,  "y": 60,  "w": 90, "h": 56, "zone": "Platform", "ownerId": "u-aina" },
+  { "id": "D-02", "x": 150, "y": 60,  "w": 90, "h": 56, "zone": "Platform", "ownerId": "u-hafiz" },
+  { "id": "D-03", "x": 260, "y": 60,  "w": 90, "h": 56, "zone": "Platform", "ownerId": "u-meiling" },
+  { "id": "D-04", "x": 40,  "y": 150, "w": 90, "h": 56, "zone": "Platform", "ownerId": "u-arjun" },
+  { "id": "D-05", "x": 150, "y": 150, "w": 90, "h": 56, "zone": "Platform", "ownerId": null },
+  { "id": "D-06", "x": 440, "y": 60,  "w": 90, "h": 56, "zone": "Data",     "ownerId": "u-farah" },
+  { "id": "D-07", "x": 550, "y": 60,  "w": 90, "h": 56, "zone": "Data",     "ownerId": "u-weijie" },
+  { "id": "D-08", "x": 660, "y": 60,  "w": 90, "h": 56, "zone": "Data",     "ownerId": "u-syafiq" },
+  { "id": "D-09", "x": 440, "y": 150, "w": 90, "h": 56, "zone": "Data",     "ownerId": "u-priya" },
+  { "id": "D-10", "x": 550, "y": 150, "w": 90, "h": 56, "zone": "Data",     "ownerId": null }
+]

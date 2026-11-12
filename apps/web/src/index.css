@@ -1,0 +1,39 @@
+:root {
+  --bg: #f7f7f5;
+  --fg: #1d2320;
+  --muted: #6b726e;
+  --card: #ffffff;
+  --border: #e3e5e1;
+  --desk-available: #34a853;
+  --desk-unassigned: #8fd19e;
+  --desk-hot: #3b7dd8;
+  --desk-away: #f2b134;
+  --desk-occupied: #b9bfbb;
+  --error: #c0392b;
+  color-scheme: light;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); }
+
+.app { max-width: 1100px; margin: 0 auto; padding: 16px; }
+.topbar { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
+.topbar h1 { margin: 0; font-size: 1.5rem; }
+.muted { color: var(--muted); }
+.error { color: var(--error); }
+.live { margin-left: auto; font-size: 0.9rem; color: var(--muted); }
+.live.on { color: var(--desk-available); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; list-style: none; padding: 0; margin: 0 0 12px; font-size: 0.9rem; }
+.legend li { display: flex; align-items: center; gap: 6px; }
+.swatch { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
+
+.floor { width: 100%; height: auto; background: var(--card); border: 1px solid var(--border); border-radius: 12px; }
+.zone-label { font-size: 14px; font-weight: 600; fill: var(--muted); }
+.desk { cursor: pointer; }
+.desk rect { stroke: rgba(0, 0, 0, 0.15); transition: fill 0.4s ease; }
+.desk:hover rect, .desk:focus rect { stroke: var(--fg); stroke-width: 2; }
+.desk:focus { outline: none; }
+.desk-id { font-size: 13px; font-weight: 700; fill: #1d2320; }
+.desk-person { font-size: 12px; fill: #1d2320; }
