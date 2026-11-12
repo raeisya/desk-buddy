@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { api } from '../api/client'
 import type { FloorDesk, UserSummary } from '../api/contracts'
-import { DESK_STATE_STYLE } from './deskStyles'
+import { useLang } from '../i18n/lang'
 import { isFree, seatedPerson } from './seating'
 
 interface Props {
@@ -29,6 +29,7 @@ function actionFor(desk: FloorDesk, persona: UserSummary | null): Action {
 export function DeskPanel({ desk, persona, note, onClose, onChanged, onOpenMe }: Props) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { t } = useLang()
   const action = actionFor(desk, persona)
   const seated = seatedPerson(desk)
   // Your own desk, and you're "in" without a booking (silent = in the office): there's nothing to
@@ -59,39 +60,39 @@ export function DeskPanel({ desk, persona, note, onClose, onChanged, onOpenMe }:
         <button type="button" onClick={onClose} aria-label="Close">×</button>
       </header>
       <dl>
-        <dt>Status</dt>
-        <dd>{DESK_STATE_STYLE[desk.state].label}</dd>
-        <dt>Zone</dt>
+        <dt>{t('panelStatus')}</dt>
+        <dd>{t(`state_${desk.state}`)}</dd>
+        <dt>{t('panelZone')}</dt>
         <dd>{desk.zone}</dd>
-        <dt>Owner</dt>
-        <dd>{desk.owner ? `${desk.owner.name} · ${desk.owner.team}` : 'Unassigned'}</dd>
-        <dt>Sitting here today</dt>
-        <dd>{seated ? seated.name : 'Nobody'}</dd>
+        <dt>{t('panelOwner')}</dt>
+        <dd>{desk.owner ? `${desk.owner.name} · ${desk.owner.team}` : t('unassigned')}</dd>
+        <dt>{t('panelSitting')}</dt>
+        <dd>{seated ? seated.name : t('nobody')}</dd>
       </dl>
 
       <div className="desk-actions">
         {note && action === 'take' && <p className="suggest-note">★ {note}</p>}
         {action === 'take' && (
           <button type="button" className="px-button primary" onClick={run} disabled={busy}>
-            {busy ? 'Taking…' : 'Take this desk'}
+            {busy ? t('taking') : t('takeDesk')}
           </button>
         )}
         {action === 'leave' && (
           <button type="button" className="px-button" onClick={run} disabled={busy}>
-            {busy ? 'Leaving…' : 'Leave desk'}
+            {busy ? t('leaving') : t('leaveDesk')}
           </button>
         )}
         {atOwnDeskByDefault && (
           <>
-            <p className="muted">You're at your desk today. Out today (WFH, MC, leave)?</p>
+            <p className="muted">{t('atOwnDesk')}</p>
             {onOpenMe && (
               <button type="button" className="px-button" onClick={onOpenMe}>
-                Set my status
+                {t('setMyStatus')}
               </button>
             )}
           </>
         )}
-        {!persona && <p className="muted">Pick who you are to take a desk.</p>}
+        {!persona && <p className="muted">{t('pickWhoFirst')}</p>}
         {error && <p className="error" role="alert">{error}</p>}
       </div>
     </aside>

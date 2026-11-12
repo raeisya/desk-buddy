@@ -1,3 +1,4 @@
+import { translate, type Lang, type StringKey } from '../i18n/lang'
 import type { FloorDesk, PersonRef } from '../api/contracts'
 
 /** Who is physically at the desk: today's booking, else the owner if they're in (silent = in the office). */
@@ -37,15 +38,16 @@ export type SeatSuggestion =
  * 3. the free desk closest to teammates sitting today, else to the team's own desks;
  * 4. no team desks at all → prefer an unowned hot desk over an absent colleague's desk.
  */
-export function suggestSeat(desks: FloorDesk[], me: { id: string; team: string }): SeatSuggestion {
+export function suggestSeat(desks: FloorDesk[], me: { id: string; team: string }, lang: Lang = 'en'): SeatSuggestion {
+  const say = (key: StringKey, vars?: Record<string, string | number>) => translate(lang, key, vars)
   const mine = desks.find((d) => seatedPerson(d)?.id === me.id)
-  if (mine) return { ok: false, note: `You're already at ${mine.id} today.`, deskId: mine.id }
+  if (mine) return { ok: false, note: say('alreadyAt', { desk: mine.id }), deskId: mine.id }
 
   const free = desks.filter(isFree)
-  if (free.length === 0) return { ok: false, note: 'No free desks right now.' }
+  if (free.length === 0) return { ok: false, note: say('noFreeNow') }
 
   const ownFree = free.find((d) => d.owner?.id === me.id)
-  if (ownFree) return { ok: true, desk: ownFree, note: `Your own desk ${ownFree.id} is free. Take it back.` }
+  if (ownFree) return { ok: true, desk: ownFree, note: say('ownFree', { desk: ownFree.id }) }
 
   const teammatesIn = desks.filter((d) => {
     const p = seatedPerson(d)
@@ -55,7 +57,7 @@ export function suggestSeat(desks: FloorDesk[], me: { id: string; team: string }
   const anchors = teammatesIn.length > 0 ? teammatesIn : teamDesks
   if (anchors.length === 0) {
     const desk = free.find((d) => d.owner === null) ?? free[0]
-    return { ok: true, desk, note: `No ${me.team} desks on this floor, so here's a free one.` }
+    return { ok: true, desk, note: say('noTeamDesks', { team: me.team }) }
   }
 
   const score = (d: FloorDesk) => {
@@ -67,13 +69,13 @@ export function suggestSeat(desks: FloorDesk[], me: { id: string; team: string }
     .reduce((a, b) => (b.s < a.s ? b : a)).desk
 
   if (teammatesIn.length === 0) {
-    return { ok: true, desk: best, note: `None of ${me.team} is in yet. This is the closest free desk to your team's desks.` }
+    return { ok: true, desk: best, note: say('noneIn', { team: me.team }) }
   }
   const nearby = teammatesIn.filter((d) => dist(best, d) <= NEARBY_DESKS * best.w).length
-  const who = nearby === 1 ? '1 teammate' : `${nearby} teammates`
+  const who = nearby === 1 ? say('oneMate') : say('manyMates', { n: nearby })
   return {
     ok: true,
     desk: best,
-    note: nearby > 0 ? `Closest free desk to ${me.team}: ${who} within a few desks.` : `Closest free desk to where ${me.team} is sitting today.`,
+    note: nearby > 0 ? say('nearTeam', { team: me.team, who }) : say('nearToday', { team: me.team }),
   }
 }
