@@ -37,7 +37,7 @@ const TABS: { id: AppTab; label: string; icon: ReactElement }[] = [
 
 /**
  * Main navigation (C): Map · Find seat · Me.
- * Phone: fixed bar at the bottom (thumb reach). Desktop: tab strip under the title block.
+ * Phone: fixed bar at the bottom (thumb reach). Desktop: sidebar left of the content.
  */
 export function AppNav({
   tab,
@@ -46,7 +46,7 @@ export function AppNav({
 }: {
   tab: AppTab
   onTab: (tab: AppTab) => void
-  placement: 'top' | 'bottom'
+  placement: 'side' | 'bottom'
 }) {
   return (
     <nav className={`app-nav app-nav--${placement}`} aria-label="Main">

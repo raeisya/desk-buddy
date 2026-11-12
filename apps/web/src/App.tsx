@@ -50,50 +50,77 @@ export default function App() {
     />
   )
 
-  const workspace = floor && (
-    <div className="workspace">
-      <div className="map-wrap">
-        <MapFrame floor={floor} users={users} legend={<Legend />} homeTeam={persona.team} onSelectDesk={(d) => setSelectedId(d.id)}>
-          <PixelOffice desks={floor.desks} selectedId={selectedId} youId={persona.id} onSelect={(d) => setSelectedId(d.id)} />
-        </MapFrame>
-      </div>
-      {selected ? (
-        <DeskPanel
-          key={selected.id /* fresh busy/error state per desk */}
-          desk={selected}
-          persona={persona}
-          onClose={() => setSelectedId(null)}
-          onChanged={() => void reload()}
-        />
-      ) : (
-        <PanelHint />
-      )}
+  const map = floor && (
+    <div className="map-wrap">
+      <MapFrame floor={floor} users={users} legend={<Legend />} homeTeam={persona.team} onSelectDesk={(d) => setSelectedId(d.id)}>
+        <PixelOffice desks={floor.desks} selectedId={selectedId} youId={persona.id} onSelect={(d) => setSelectedId(d.id)} />
+      </MapFrame>
     </div>
   )
 
+  const panel = selected ? (
+    <DeskPanel
+      key={selected.id /* fresh busy/error state per desk */}
+      desk={selected}
+      persona={persona}
+      onClose={() => setSelectedId(null)}
+      onChanged={() => void reload()}
+    />
+  ) : (
+    <PanelHint />
+  )
+
+  const pages = (
+    <>
+      {error && <p className="error">Can't reach the API: {error}</p>}
+      {tab === 'seat' && floor && (
+        <FindSeat
+          floor={floor}
+          persona={persona}
+          onChanged={() => void reload()}
+          onShowOnMap={(d) => {
+            setSelectedId(d.id)
+            setTab('map')
+          }}
+        />
+      )}
+      {tab === 'me' && floor && <Me floor={floor} persona={persona} onChanged={() => void reload()} />}
+    </>
+  )
+
   // One tab at a time on every screen size: Map · Find seat · Me.
-  // Phone puts the nav at the bottom (thumb reach); desktop puts it under the title block.
+  // Phone: nav fixed at the bottom (thumb reach), desk panel under the map.
+  if (narrow) {
+    return (
+      <div className="app app--phone">
+        {header}
+        <main>
+          {pages}
+          {tab === 'map' && floor && (
+            <div className="workspace">
+              {map}
+              {panel}
+            </div>
+          )}
+        </main>
+        <AppNav tab={tab} onTab={setTab} placement="bottom" />
+      </div>
+    )
+  }
+
+  // Desktop: left column = nav + desk panel, so the map gets the whole right side.
   return (
-    <div className={narrow ? 'app app--phone' : 'app'}>
+    <div className="app app--desktop">
       {header}
-      {!narrow && <AppNav tab={tab} onTab={setTab} placement="top" />}
+      <div className="app-side">
+        <AppNav tab={tab} onTab={setTab} placement="side" />
+        {tab === 'map' && floor && panel}
+      </div>
       <main>
-        {error && <p className="error">Can't reach the API: {error}</p>}
-        {tab === 'map' && workspace}
-        {tab === 'seat' && floor && (
-          <FindSeat
-            floor={floor}
-            persona={persona}
-            onChanged={() => void reload()}
-            onShowOnMap={(d) => {
-              setSelectedId(d.id)
-              setTab('map')
-            }}
-          />
-        )}
-        {tab === 'me' && floor && <Me floor={floor} persona={persona} onChanged={() => void reload()} />}
+        {pages}
+        {tab === 'map' && map}
       </main>
-      {narrow ? <AppNav tab={tab} onTab={setTab} placement="bottom" /> : <DrawingFooter />}
+      <DrawingFooter />
     </div>
   )
 }
