@@ -1,11 +1,13 @@
 import type { FloorDesk, PersonRef } from '../api/contracts'
 import { CHARACTER_SHEET, frameStyle, seatPosition, variantFor } from '../theme/characters'
 import { DESK_STATE_STYLE } from './deskStyles'
+import { shortName } from './displayName'
 import { OFFICE_MAP } from './officeMap'
 
 const { width: MAP_W, height: MAP_H, src } = OFFICE_MAP
 const pct = (value: number, total: number) => `${(value / total) * 100}%`
 const SIT_FRAME = CHARACTER_SHEET.frames.sit[0]
+const NAME_DROP = 10 // map px: the sit frame has empty space above the head
 
 /** Who is physically at the desk: today's booking, else the owner if they're in. */
 function seatedPerson(d: FloorDesk): PersonRef | null {
@@ -46,12 +48,13 @@ export function PixelOffice({ desks, selectedId, youId, onSelect }: Props) {
         const person = seatedPerson(d)
         const label = DESK_STATE_STYLE[d.state].label
         const isYou = !!youId && (d.owner?.id === youId || d.occupant?.id === youId)
+        const youSeatedHere = !!person && person.id === youId
         const seat = seatPosition(d)
         return (
           <div key={d.id} className="px-desk-slot">
             <button
               type="button"
-              className={`px-desk state-${d.state}${d.id === selectedId ? ' selected' : ''}${isYou ? ' is-you' : ''}`}
+              className={`px-desk state-${d.state}${d.id === selectedId ? ' selected' : ''}${isYou ? ' is-you' : ''}${isYou && !person ? ' is-you-empty' : ''}`}
               style={{ left: pct(d.x, MAP_W), top: pct(d.y, MAP_H), width: pct(d.w, MAP_W), height: pct(d.h, MAP_H) }}
               onClick={() => onSelect?.(d)}
               aria-label={`${d.id}, ${label}${person ? `, ${person.name}` : ''}${isYou ? ', your desk' : ''}`}
@@ -69,6 +72,20 @@ export function PixelOffice({ desks, selectedId, youId, onSelect }: Props) {
                   ...frameStyle(variantFor(person.id), d.facing, SIT_FRAME),
                 }}
               />
+            )}
+            {person && (
+              <span
+                className={`px-name facing-${d.facing}${youSeatedHere ? ' is-you' : ''}`}
+                aria-hidden="true"
+                style={{
+                  left: pct(seat.x + CHARACTER_SHEET.frameWidth / 2, MAP_W),
+                  // Above the head for top-row (front-facing) people, below for the bottom row — same side as the bubbles.
+                  // (+NAME_DROP so top-row tags clear the zone signs drawn just above the pods)
+                  top: pct(d.facing === 'down' ? seat.y + NAME_DROP : d.y + d.h, MAP_H),
+                }}
+              >
+                {youSeatedHere ? 'YOU' : shortName(person.name)}
+              </span>
             )}
             {ownerAway(d) && (
               <span

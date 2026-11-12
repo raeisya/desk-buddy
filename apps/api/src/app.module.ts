@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { BookingsModule } from './bookings/bookings.module';
 import { CommonModule } from './common/common.module';
 import { EventsModule } from './events/events.module';
 import { FloorModule } from './floor/floor.module';
@@ -38,6 +39,7 @@ import { UsersModule } from './users/users.module';
     FloorModule,
     SeedModule,
     SlackModule,
+    BookingsModule,
   ],
   controllers: [HealthController],
 })

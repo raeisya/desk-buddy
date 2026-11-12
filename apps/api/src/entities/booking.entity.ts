@@ -1,9 +1,13 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Desk } from './desk.entity';
 import { User } from './user.entity';
 
 // A booking is "active" while released_at IS NULL.
+// The DB enforces at most one active booking per desk per day and per user per day,
+// so concurrent claims can't double-book (the loser gets a unique violation → 409).
 @Entity('bookings')
+@Index('uq_bookings_active_desk', ['deskId', 'date'], { unique: true, where: '"released_at" IS NULL' })
+@Index('uq_bookings_active_user', ['userId', 'date'], { unique: true, where: '"released_at" IS NULL' })
 export class Booking {
   @PrimaryGeneratedColumn()
   id!: number;

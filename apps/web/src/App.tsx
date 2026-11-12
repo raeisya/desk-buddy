@@ -7,7 +7,7 @@ import { usePersona } from './persona/personaContext'
 import { PersonaSwitcher } from './persona/PersonaSwitcher'
 
 export default function App() {
-  const { floor, error, live } = useFloor()
+  const { floor, error, live, reload } = useFloor()
   const { persona } = usePersona()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   // Look the desk up in the latest floor so the panel updates live when state changes.
@@ -17,7 +17,7 @@ export default function App() {
     <div className="app">
       <header className="topbar">
         <h1>DeskBuddy</h1>
-        <span className="muted">{floor ? `${floor.date} · auto-release at ${floor.releaseCutoff}` : 'Loading…'}</span>
+        <span className="muted">{floor ? floor.date : 'Loading…'}</span>
         <PersonaSwitcher />
         <span className={`live ${live ? 'on' : ''}`}>{live ? '● Live' : '○ Offline'}</span>
       </header>
@@ -35,7 +35,15 @@ export default function App() {
                 onSelect={(d) => setSelectedId(d.id)}
               />
             </div>
-            {selected && <DeskPanel desk={selected} onClose={() => setSelectedId(null)} />}
+            {selected && (
+              <DeskPanel
+                key={selected.id /* fresh busy/error state per desk */}
+                desk={selected}
+                persona={persona}
+                onClose={() => setSelectedId(null)}
+                onChanged={() => void reload()}
+              />
+            )}
           </div>
         )}
       </main>

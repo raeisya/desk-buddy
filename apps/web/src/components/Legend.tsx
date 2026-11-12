@@ -4,7 +4,8 @@ import { DESK_STATE_STYLE } from './deskStyles'
 export function Legend() {
   return (
     <ul className="legend">
-      {DESK_STATES.map((s) => (
+      {/* 'away' is no longer produced (silent owners count as in the office), so it's not shown. */}
+      {DESK_STATES.filter((s) => s !== 'away').map((s) => (
         <li key={s}>
           <span className="swatch" style={{ background: DESK_STATE_STYLE[s].color }} />
           {DESK_STATE_STYLE[s].label}
