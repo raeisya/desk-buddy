@@ -60,6 +60,9 @@ export const api = {
     request<AdminUser>(`/admin/users/${encodeURIComponent(userId)}`, { method: 'PATCH', body: JSON.stringify({ actorId, ...patch }) }),
   setDeskOwner: (actorId: string, deskId: string, userId: string | null) =>
     request(`/desks/${encodeURIComponent(deskId)}/owner`, { method: 'PUT', body: JSON.stringify({ actorId, userId }) }),
+  // Slack status sync (C): has this person connected Slack so their status mirrors to it?
+  getSlackStatusLink: (userId: string) =>
+    request<{ available: boolean; connected: boolean }>(`/slack/status-link?userId=${encodeURIComponent(userId)}`),
   moveMyDesk: (userId: string, deskId: string) =>
     request<{ from: string; to: string }>(`/desks/${encodeURIComponent(deskId)}/move`, {
       method: 'POST',

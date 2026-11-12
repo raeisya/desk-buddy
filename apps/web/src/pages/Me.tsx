@@ -43,9 +43,36 @@ interface Props {
  * The usual way to update is still a Slack post; this is for when the AI got it wrong.
  * Privacy: only you see your own reason here; colleagues see "Away".
  */
+/** Back from "Connect Slack": read and clear `#slack-status=ok|error` once. */
+function readSlackReturn(): 'ok' | 'error' | null {
+  const m = window.location.hash.match(/^#slack-status=(ok|error)$/)
+  if (!m) return null
+  history.replaceState(null, '', window.location.pathname + window.location.search)
+  return m[1] as 'ok' | 'error'
+}
+
 export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
   const { t } = useLang()
   const [busy, setBusy] = useState<PresenceStatus | null>(null)
+  // Slack status sync: connected = a status set here is mirrored to the person's Slack status.
+  const [slackLinked, setSlackLinked] = useState<boolean | null>(null)
+  // Two-way sync switched on for this deployment (needs extra Slack app permissions); else no button.
+  const [slackSync, setSlackSync] = useState(false)
+  const [slackReturn] = useState(readSlackReturn)
+  useEffect(() => {
+    let alive = true
+    api.getSlackStatusLink(persona.id).then(
+      (r) => {
+        if (!alive) return
+        setSlackLinked(r.connected)
+        setSlackSync(r.available)
+      },
+      () => alive && setSlackLinked(false),
+    )
+    return () => {
+      alive = false
+    }
+  }, [persona.id])
   const [lastSet, setLastSet] = useState<PresenceStatus | null>(null)
   // Your real status today (incl. one set by a Slack post); the floor only says in/out.
   // App remounts this page per persona (key), so it can never show someone else's reason.
@@ -118,7 +145,7 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
     try {
       await api.setPresence(persona.id, status)
       setLastSet(status)
-      setMessage(t('saved'))
+      setMessage(t(slackLinked ? 'savedSlack' : 'saved'))
       onChanged()
     } catch (e) {
       setMessage((e as Error).message)
@@ -302,6 +329,26 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
             {t('slackTipTail')}
           </span>
         </p>
+        {(slackSync || slackLinked) && (
+        <div className="me-slack me-slack--sync">
+          {slackLinked ? (
+            <span className="me-sync-on">{t('syncOn')}</span>
+          ) : (
+            <>
+              <span>{t('syncAsk')}</span>
+              <a className="db-btn db-btn--secondary me-sync-btn" href="/api/auth/slack/status">
+                {t('syncBtn')}
+              </a>
+            </>
+          )}
+          {slackReturn === 'error' && (
+            <span className="error" role="alert">
+              {t('syncErr')}
+            </span>
+          )}
+          {slackReturn === 'ok' && slackLinked && <span className="me-msg" role="status">{t('syncOk')}</span>}
+        </div>
+        )}
       </div>
     </section>
   )

@@ -8,6 +8,8 @@ import { ClockService } from '../common/clock.service';
 import type { PresenceStatus } from '../common/contracts';
 import { addDays, emojiStatus, MIN_CONFIDENCE, parseStatusText, STATUS_PRIORITY } from '../parser/status-parser';
 import { PresenceService } from '../presence/presence.service';
+import type { SlackProfileStatus } from './slack-status';
+import { SlackStatusService, type StatusApplied } from './slack-status.service';
 import { SlackUsersService } from './slack-users.service';
 
 /** The daily "where are you working today" message. Any bot or person may post it. */
@@ -37,6 +39,13 @@ const STATUS_LABEL: Record<PresenceStatus, string> = {
 };
 
 const tsToMs = (ts: string) => Math.round(Number(ts) * 1000);
+const fmtDay = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' });
+const dayLabel = (date: string) => fmtDay.format(new Date(`${date}T00:00:00Z`));
+
+/** user_status_changed / user_change payload: the user with their profile. */
+interface SlackUserEvent {
+  user?: { id?: string; profile?: SlackProfileStatus };
+}
 
 /**
  * Slack (Socket Mode) → presence. Reactions on the daily prompt and status replies become
@@ -56,6 +65,7 @@ export class SlackService implements OnApplicationBootstrap, OnApplicationShutdo
     private readonly clock: ClockService,
     private readonly presence: PresenceService,
     private readonly slackUsers: SlackUsersService,
+    private readonly slackStatus: SlackStatusService,
   ) {
     this.channelId = config.get<string>('SLACK_CHANNEL_ID') || undefined;
   }
@@ -87,11 +97,17 @@ export class SlackService implements OnApplicationBootstrap, OnApplicationShutdo
     this.app.event('reaction_added', ({ event }) => this.safely('reaction_added', () => this.onReactionAdded(event)));
     this.app.event('reaction_removed', ({ event }) => this.safely('reaction_removed', () => this.onReactionRemoved(event)));
     this.app.event('message', ({ event }) => this.safely('message', () => this.onMessage(event as unknown as Record<string, unknown>)));
+    // Slack profile status ("🌴 Vacationing · until Fri"): needs the users:read scope + this event (C).
+    // user_change carries the same profile; duplicates are no-ops in SlackStatusService.
+    this.app.event('user_status_changed', ({ event }) => this.safely('user_status_changed', () => this.onStatusChanged(event as unknown as SlackUserEvent)));
+    this.app.event('user_change', ({ event }) => this.safely('user_change', () => this.onStatusChanged(event as unknown as SlackUserEvent)));
     this.app.error(async (err) => this.log.error(`Slack error: ${err.message}`));
 
     await this.app.start();
     this.connected = true;
     this.log.log('Slack connected (Socket Mode)');
+    // Statuses set while we were down still count.
+    void this.syncStatuses().catch((err) => this.log.warn(`Slack status sync skipped: ${(err as Error).message} (needs users:read)`));
   }
 
   private async safely(name: string, fn: () => Promise<void>): Promise<void> {
@@ -194,7 +210,34 @@ export class SlackService implements OnApplicationBootstrap, OnApplicationShutdo
     await this.confirm(event.user, resolved.user.id, resolved.user.name, parsed.status, date, resolved.isNew, threadTs);
   }
 
+  private async onStatusChanged(event: SlackUserEvent): Promise<void> {
+    const id = event.user?.id;
+    if (!id || !event.user?.profile) return;
+    const applied = await this.slackStatus.apply(id, event.user.profile);
+    if (applied) await this.confirmStatus(id, applied);
+  }
+
   // ---------------------------------------------------------------- demo / P2 helpers
+
+  /** Read every member's current Slack status (on connect, or POST /api/slack/status-sync). Quiet: no messages. */
+  async syncStatuses(): Promise<{ checked: number; applied: number }> {
+    if (!this.app || !this.connected) throw new ServiceUnavailableException('Slack is not connected');
+    let cursor: string | undefined;
+    let checked = 0;
+    let applied = 0;
+    do {
+      const res = await this.app.client.users.list({ limit: 200, cursor });
+      for (const m of res.members ?? []) {
+        if (!m.id || m.deleted || m.is_bot || !m.profile) continue;
+        checked++;
+        if (await this.slackStatus.apply(m.id, m.profile as SlackProfileStatus)) applied++;
+      }
+      cursor = res.response_metadata?.next_cursor || undefined;
+    } while (cursor);
+    this.log.log(`Slack status sync: ${applied} of ${checked} members applied`);
+    return { checked, applied };
+  }
+
 
   /** Posts the daily prompt (stands in for the company's daily bot in the test workspace). */
   async postDailyPrompt(): Promise<{ ts: string }> {
@@ -242,6 +285,20 @@ export class SlackService implements OnApplicationBootstrap, OnApplicationShutdo
     const deskLine = !desk ? '' : status === 'IN_OFFICE' ? ` Desk ${desk.id} is yours.` : ` Desk ${desk.id} is now free for others :large_green_circle:`;
     const intro = isNew ? `:wave: For this demo you are *${name}*.\n` : '';
     await this.ephemeral(slackUser, threadTs, `${intro}:white_check_mark: Got it: *${name}* is ${STATUS_LABEL[status]} ${when}.${deskLine}`);
+  }
+
+  private async confirmStatus(slackUser: string, a: StatusApplied): Promise<void> {
+    if (!a.status) {
+      const desk = a.deskId ? ` Desk ${a.deskId} is yours again.` : '';
+      await this.ephemeral(slackUser, undefined, `:white_check_mark: Your Slack status is cleared, so *${a.name}* counts as in the office.${desk}`);
+      return;
+    }
+    const today = this.clock.today();
+    const first = a.dates[0];
+    const last = a.dates[a.dates.length - 1];
+    const range = a.dates.length === 1 ? (first === today ? 'today' : dayLabel(first)) : `${first === today ? 'today' : dayLabel(first)} – ${dayLabel(last)}`;
+    const desk = a.deskId ? ` Desk ${a.deskId} is free for others on those days :large_green_circle:` : '';
+    await this.ephemeral(slackUser, undefined, `:white_check_mark: Saw your Slack status *${a.label}*: *${a.name}* is ${STATUS_LABEL[a.status]} ${range}.${desk}`);
   }
 
   /** Only the person sees it, so MC/leave reasons stay private. */

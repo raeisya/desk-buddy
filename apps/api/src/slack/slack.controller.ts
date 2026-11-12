@@ -23,6 +23,12 @@ export class SlackController {
     return this.slack.postDailyPrompt();
   }
 
+  /** POST /api/slack/status-sync: re-read everyone's Slack profile status now (demo helper; needs users:read). */
+  @Post('status-sync')
+  statusSync() {
+    return this.slack.syncStatuses();
+  }
+
   /** POST /api/slack/inject { userId, text }: demo fallback (plan P2), no Slack needed. */
   @Post('inject')
   async inject(@Body() body: { userId?: string; text?: string }) {

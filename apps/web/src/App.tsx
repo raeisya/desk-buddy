@@ -49,7 +49,8 @@ export default function App() {
   useAmbientWalks(floor, users, walkingIds, startWalks) // John strolls, Chi Keen mingles
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null)
-  const [tab, setTab] = useState<AppTab>('map')
+  // Back from "Connect Slack" (Me page): land on Me so the result shows.
+  const [tab, setTab] = useState<AppTab>(() => (window.location.hash.startsWith('#slack-status=') ? 'me' : 'map'))
   const [kopiMessage, setKopiMessage] = useState<string | null>(null)
   const kopiTimer = useRef<number | undefined>(undefined)
   useEffect(() => () => window.clearTimeout(kopiTimer.current), []) // no stray timer after unmount
