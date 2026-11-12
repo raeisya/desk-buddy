@@ -1,5 +1,5 @@
-import type { AvatarConfig, FloorResponse, PersonRef } from '../api/contracts'
-import { variantFor, type Direction } from '../theme/characters'
+import type { AvatarConfig, FloorResponse, HairStyle as ContractHairStyle, PantsColour as ContractPants, PersonRef, SkinTone as ContractSkin } from '../api/contracts'
+import { CHARACTER_SHEET, frameStyle, variantFor, type Direction } from '../theme/characters'
 
 /**
  * C's character generator (scripts/generate-characters.py), ported to the browser so any look can be
@@ -8,6 +8,10 @@ import { variantFor, type Direction } from '../theme/characters'
  *
  * One sheet per look: 8 columns (0 idle | 1–4 walk | 5 sit | 6–7 type) × 4 rows (down, left, right, up),
  * 16×24 native px per frame, drawn at 2× → 256×192 px. Cached as a data URL per look.
+ *
+ * Only CUSTOM looks are drawn here. C's 8 presets keep using her static sheet (/sprites/characters.png):
+ * no canvas needed, so default characters still show in browsers that block canvas read-back
+ * (Brave, Firefox strict, Tor) or have no 2D context. If C edits the Python patterns, update these too.
  */
 
 export type RGB = readonly [number, number, number]
@@ -19,16 +23,17 @@ export const SKINS = {
   tan: [214, 160, 116],
   brown: [176, 120, 82],
   deep: [130, 86, 58],
-} as const satisfies Record<string, RGB>
+} as const satisfies Record<ContractSkin, RGB>
 export const PANTS = {
   navy: [52, 60, 96],
   charcoal: [64, 64, 72],
   khaki: [150, 130, 96],
   black: [40, 40, 48],
-} as const satisfies Record<string, RGB>
-export type HairStyle = 'short' | 'long' | 'hijab'
-export type SkinTone = keyof typeof SKINS
-export type PantsColour = keyof typeof PANTS
+} as const satisfies Record<ContractPants, RGB>
+// The server validates against the contracts' lists; drawing must cover exactly those.
+export type HairStyle = ContractHairStyle
+export type SkinTone = ContractSkin
+export type PantsColour = ContractPants
 
 export interface Avatar {
   style: HairStyle
@@ -54,11 +59,11 @@ export const PRESET_AVATARS: readonly Avatar[] = [
 ]
 
 // ── C's patterns (verbatim) ──────────────────────────────────────────────────
-const FW = 16
-const FH = 24
-const SCALE = 2
-const COLS = 8
-const DIRS: readonly Direction[] = ['down', 'left', 'right', 'up']
+const SCALE = 2 // native art is drawn at 2× (C's generator)
+const FW = CHARACTER_SHEET.frameWidth / SCALE // 16
+const FH = CHARACTER_SHEET.frameHeight / SCALE // 24
+const COLS = CHARACTER_SHEET.columns // 8
+const DIRS: readonly Direction[] = CHARACTER_SHEET.directions
 export const OUTLINE: RGBA = [34, 32, 52, 255]
 const SHADOW: RGBA = [0, 0, 0, 70]
 const E = '................'
@@ -140,13 +145,23 @@ export function sitting(direction: Direction, style: HairStyle, typing: 0 | 1 | 
   return direction === 'right' ? [...rows.slice(0, 19), ...mirror(rows.slice(19))] : rows
 }
 
+/** C's check(): every frame is exactly FH rows of FW chars, or the art silently breaks. */
+function check(rows: string[], label: string): string[] {
+  if (rows.length !== FH || rows.some((r) => r.length !== FW)) throw new Error(`characterArt: bad frame ${label}`)
+  return rows
+}
+
 function framesFor(direction: Direction, style: HairStyle): string[][] {
   const walk =
     direction === 'down' || direction === 'up'
       ? ['l', 'n', 'r', 'n'].map((k) => standing(direction, style, k))
       : [standing(direction, style, 'a', 1), standing(direction, style, 'n', 0), standing(direction, style, 'b', -1), standing(direction, style, 'n', 0)]
-  return [standing(direction, style, 'n'), ...walk, sitting(direction, style), sitting(direction, style, 0), sitting(direction, style, 1)]
+  return [standing(direction, style, 'n'), ...walk, sitting(direction, style), sitting(direction, style, 0), sitting(direction, style, 1)].map(
+    (f, i) => check(f, `${direction}/${style}/${i}`),
+  )
 }
+// Validate every pattern once at load, so a bad edit fails loudly here rather than as a gap mid-map.
+for (const d of DIRS) for (const st of ['short', 'long', 'hijab'] as const) framesFor(d, st)
 
 /** C's colourise(): palette + a 1px outline around the body (not around the shadow). */
 export function colourise(rows: string[], a: Avatar): (RGBA | null)[][] {
@@ -193,38 +208,54 @@ export function avatarSheetPixels(a: Avatar): { width: number; height: number; d
   return { width, height, data }
 }
 
-const MAX_CACHED = 64 // looks in use (≈80 people, most on presets) plus recent picker previews
+const MAX_CACHED = 200 // looks in use (≈80 people) plus recent picker previews; least recently used out
 const sheetCache = new Map<string, string>()
 const sheetByObject = new WeakMap<Avatar, string>()
-const keyOf = (a: Avatar) => `${a.style}|${a.hair.join(',')}|${a.skin}|${a.shirt.join(',')}|${a.pants}`
+export const keyOf = (a: Avatar) => `${a.style}|${a.hair.join(',')}|${a.skin}|${a.shirt.join(',')}|${a.pants}`
 
-/** Data URL of one look's sheet, drawn once and cached (bounded, oldest out first). */
-export function avatarSheetUrl(a: Avatar): string {
+/** Data URL of one look's sheet (cached), or null if this browser can't draw/read a canvas. */
+export function avatarSheetUrl(a: Avatar): string | null {
   const fast = sheetByObject.get(a)
   if (fast) return fast
   const key = keyOf(a)
   let url = sheetCache.get(key)
-  if (!url) {
+  if (url) {
+    sheetCache.delete(key) // refresh: most recently used goes to the back
+  } else {
+    const ctx = document.createElement('canvas').getContext('2d')
+    if (!ctx) return null
     const { width, height, data } = avatarSheetPixels(a)
-    const canvas = document.createElement('canvas')
-    canvas.width = width
-    canvas.height = height
-    const ctx = canvas.getContext('2d')!
+    ctx.canvas.width = width
+    ctx.canvas.height = height
     const img = ctx.createImageData(width, height)
     img.data.set(data)
     ctx.putImageData(img, 0, 0)
-    url = canvas.toDataURL('image/png')
-    sheetCache.set(key, url)
-    if (sheetCache.size > MAX_CACHED) sheetCache.delete(sheetCache.keys().next().value!)
+    try {
+      url = ctx.canvas.toDataURL('image/png')
+    } catch {
+      return null
+    }
+    if (sheetCache.size >= MAX_CACHED) sheetCache.delete(sheetCache.keys().next().value!)
   }
+  sheetCache.set(key, url)
   sheetByObject.set(a, url)
   return url
 }
 
-/** CSS for one frame of a look, scale-independent (same maths as C's frameStyle). */
+const presetIndex = new Map<Avatar, number>()
+
+/**
+ * CSS for one frame of a look, scale-independent. Presets use C's static sheet (no canvas); a custom
+ * look is drawn here, falling back to the closest preset (same hair style) if the canvas is unavailable.
+ */
 export function avatarFrameStyle(a: Avatar, direction: Direction, column: number) {
+  if (presetIndex.size === 0) PRESET_AVATARS.forEach((p, i) => presetIndex.set(p, i))
+  const preset = presetIndex.get(a)
+  if (preset !== undefined) return frameStyle(preset, direction, column)
+  const url = avatarSheetUrl(a)
+  if (!url) return frameStyle(Math.max(0, PRESET_AVATARS.findIndex((p) => p.style === a.style)), direction, column)
   return {
-    backgroundImage: `url("${avatarSheetUrl(a)}")`,
+    backgroundImage: `url("${url}")`,
     backgroundSize: `${COLS * 100}% ${DIRS.length * 100}%`,
     backgroundPosition: `${(column / (COLS - 1)) * 100}% ${(DIRS.indexOf(direction) / (DIRS.length - 1)) * 100}%`,
     imageRendering: 'pixelated' as const,
@@ -237,9 +268,10 @@ export function avatarFrameStyle(a: Avatar, direction: Direction, column: number
 // each render; it only rebuilds when the users list or the floor object actually changed.
 const fromUsers = new Map<string, AvatarConfig | null>()
 const fromFloor = new Map<string, AvatarConfig | null>()
-const justSaved = new Map<string, { avatar: AvatarConfig | null; users: unknown; floor: unknown }>()
+const justSaved = new Map<string, { avatar: AvatarConfig | null; newer: number }>()
 let lastUsers: unknown = null
 let lastFloor: unknown = null
+const sameLook = (a: AvatarConfig | null | undefined, b: AvatarConfig | null | undefined) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null)
 
 export function registerPeople(users: readonly PersonRef[], floor: FloorResponse | null) {
   if (users === lastUsers && floor === lastFloor) return // nothing new (e.g. every animation frame)
@@ -249,16 +281,19 @@ export function registerPeople(users: readonly PersonRef[], floor: FloorResponse
   for (const u of users) fromUsers.set(u.id, u.avatar ?? null)
   fromFloor.clear()
   for (const d of floor?.desks ?? []) for (const p of [d.owner, d.occupant]) if (p) fromFloor.set(p.id, p.avatar ?? null)
-  // A fetch that happened after your save already has it: stop overriding, so a later change made
-  // elsewhere (another device, an admin) shows up instead of your old save.
+  // Your save wins until the server data shows it (caught up), or until two newer arrivals: a fetch
+  // already in flight when you saved can still carry the OLD look, but by the second one a newer
+  // change made elsewhere (another device, an admin) is the truth and should show.
   for (const [id, s] of justSaved) {
-    if ((floor !== s.floor && fromFloor.has(id)) || users !== s.users) justSaved.delete(id)
+    const server = fromFloor.has(id) ? fromFloor.get(id) : fromUsers.get(id)
+    s.newer += 1
+    if (sameLook(server, s.avatar) || s.newer >= 2) justSaved.delete(id)
   }
 }
 
 /** Call after saving your look, so it shows everywhere at once (before the next refetch). */
 export function rememberSaved(personId: string, avatar: AvatarConfig | null) {
-  justSaved.set(personId, { avatar, users: lastUsers, floor: lastFloor })
+  justSaved.set(personId, { avatar, newer: 0 })
 }
 
 export function savedLookOf(personId: string): AvatarConfig | null {

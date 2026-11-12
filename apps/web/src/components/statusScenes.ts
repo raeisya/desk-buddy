@@ -1,4 +1,4 @@
-import { colourise, OUTLINE, SKINS, sitting, standing, type Avatar, type RGB, type RGBA } from './characterArt'
+import { colourise, keyOf, OUTLINE, SKINS, sitting, standing, type Avatar, type RGB, type RGBA } from './characterArt'
 
 /**
  * Me-page status scenes, drawn in the browser in YOUR look. 48×32 native px at 3× → 144×96.
@@ -185,20 +185,25 @@ export function scenePixels(name: SceneName, a: Avatar): { width: number; height
 const cache = new Map<string, string>()
 const MAX_CACHED = 32 // a few scenes × your recent looks; oldest out first
 
-/** Data URL of a scene in this look, drawn once and cached. */
+/** Data URL of a scene in this look (cached), or '' if this browser can't draw/read a canvas. */
 export function sceneUrl(name: SceneName, a: Avatar): string {
-  const key = `${name}|${JSON.stringify(a)}`
+  const key = `${name}|${keyOf(a)}`
   const hit = cache.get(key)
   if (hit) return hit
+  const ctx = document.createElement('canvas').getContext('2d')
+  if (!ctx) return ''
   const { width, height, data } = scenePixels(name, a)
-  const c = document.createElement('canvas')
-  c.width = width
-  c.height = height
-  const ctx = c.getContext('2d')!
+  ctx.canvas.width = width
+  ctx.canvas.height = height
   const img = ctx.createImageData(width, height)
   img.data.set(data)
   ctx.putImageData(img, 0, 0)
-  const url = c.toDataURL('image/png')
+  let url: string
+  try {
+    url = ctx.canvas.toDataURL('image/png')
+  } catch {
+    return ''
+  }
   cache.set(key, url)
   if (cache.size > MAX_CACHED) cache.delete(cache.keys().next().value!)
   return url

@@ -77,7 +77,10 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
   const atDesk = !!sitting || (own !== null && !ownerOut)
   const fromServer = serverStatus === 'IN_OFFICE' && ownerOut ? null : serverStatus
   const active: PresenceStatus | null = lastSet ?? (sitting ? 'IN_OFFICE' : fromServer) ?? (atDesk ? 'IN_OFFICE' : null)
-  const scene = active ? SCENES[active] : undefined
+  const sceneDef = active ? SCENES[active] : undefined
+  // '' if this browser can't draw the scene (canvas blocked/unavailable): show your character instead.
+  const sceneSrc = sceneDef ? sceneUrl(sceneDef.file, avatarFor(persona.id)) : ''
+  const scene = sceneDef && sceneSrc ? sceneDef : undefined
   const headline = active ? STATUSES.find((s) => s.id === active)!.label : ownerOut ? 'Away' : 'No desk yet'
   const out = active !== null ? active !== 'IN_OFFICE' : ownerOut
   const tone = active === 'IN_OFFICE' ? ' me-status--in' : out ? ' me-status--out' : ''
@@ -129,7 +132,7 @@ export function Me({ floor, persona, onChanged, onFindSeat }: Props) {
               className="me-scene"
               role="img"
               aria-label={scene.alt}
-              style={{ backgroundImage: `url("${sceneUrl(scene.file, avatarFor(persona.id))}")` }}
+              style={{ backgroundImage: `url("${sceneSrc}")` }}
             />
           ) : (
             <span className="me-sprite" style={personFrameStyle(persona.id, 'down', 0)} aria-hidden="true" />
