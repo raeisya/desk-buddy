@@ -15,6 +15,7 @@
   {"id":"u-danial","name":"Danial","email":"danial@acme.example","team":"CityOS","role":"staff","slackId":null},
   {"id":"u-aisyah","name":"Aisyah","email":"aisyah@acme.example","team":"CityOS","role":"staff","slackId":null},
   {"id":"u-zhihao","name":"Zhi Hao","email":"zhihao@acme.example","team":"CityOS","role":"staff","slackId":null},
+  {"id":"u-john","name":"John","email":"john@acme.example","team":"CityOS","role":"hod","slackId":null},
   {"id":"u-farah","name":"Farah","email":"farah@acme.example","team":"SpatialQ","role":"hod","slackId":null},
   {"id":"u-weijie","name":"Afiq","email":"weijie@acme.example","team":"SpatialQ","role":"staff","slackId":null},
   {"id":"u-syafiq","name":"Jia Jiat","email":"syafiq@acme.example","team":"SpatialQ","role":"staff","slackId":null},
