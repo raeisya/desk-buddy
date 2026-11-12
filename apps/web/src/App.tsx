@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FloorResponse } from './api/contracts'
+import { registerPeople } from './components/characterArt'
 import { DeskPanel } from './components/DeskPanel'
 import { Legend } from './components/Legend'
 import { PixelOffice } from './components/PixelOffice'
@@ -28,17 +29,22 @@ interface Suggestion {
 export default function App() {
   const { walkers, hiddenSeated, walkingIds, start: startWalks, cancelAll: cancelWalks } = useWalkers()
   // People who arrive walk in from the door, leavers walk out, desk-switchers walk across.
+  const { persona, users, setPersona, refreshUsers } = usePersona()
   const onFloorChange = useCallback(
     (prev: FloorResponse, next: FloorResponse) => {
+      refreshUsers() // looks of people not on today's floor (e.g. someone without a desk saved a new look)
       const { walks, bulk } = presenceWalks(prev.desks, next.desks)
       if (bulk) return cancelWalks()
       startWalks(walks.map((w) => ({ personId: w.personId, name: w.name, walk: w.walk, hideSeated: w.direction === 'in' })))
     },
-    [startWalks, cancelWalks],
+    [startWalks, cancelWalks, refreshUsers],
   )
   const { floor, error, live, reload } = useFloor(onFloorChange)
-  const { persona, users, setPersona } = usePersona()
-  useAmbientWalks(floor, users, walkingIds, startWalks) // John drops by, Chi Keen mingles
+  // Everyone's saved character look (customization), for every place that draws people. Done here,
+  // before the children render, so map, header, login and Me all see the same latest looks. It's a
+  // no-op unless the users list or the floor object changed (so not on every animation frame).
+  registerPeople(users, floor)
+  useAmbientWalks(floor, users, walkingIds, startWalks) // John strolls, Chi Keen mingles
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null)
   const [tab, setTab] = useState<AppTab>('map')
@@ -167,7 +173,7 @@ export default function App() {
           }}
         />
       )}
-      {tab === 'me' && floor && <Me floor={floor} persona={persona} onChanged={() => void reload()} onFindSeat={() => setTab('seat')} />}
+      {tab === 'me' && floor && <Me key={persona.id /* fresh state per person: no leaking someone else's status */} floor={floor} persona={persona} onChanged={() => void reload()} onFindSeat={() => setTab('seat')} />}
       {tab === 'team' && canSeeTeam && floor && (
         <HodDashboard floor={floor} persona={persona} users={users} onChanged={() => void reload()} />
       )}

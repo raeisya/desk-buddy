@@ -10,6 +10,23 @@ export type PresenceSource = (typeof PRESENCE_SOURCES)[number];
 export const ROLES = ['staff', 'hod', 'admin'] as const;
 export type Role = (typeof ROLES)[number];
 
+// Character customization: a person's chosen look. null/absent = the default preset for their id.
+// Colours are #rrggbb; skin and pants pick from the generator's palettes.
+export const HAIR_STYLES = ['short', 'long', 'hijab'] as const;
+export type HairStyle = (typeof HAIR_STYLES)[number];
+export const SKIN_TONES = ['light', 'medlight', 'tan', 'brown', 'deep'] as const;
+export type SkinTone = (typeof SKIN_TONES)[number];
+export const PANTS_COLOURS = ['navy', 'charcoal', 'khaki', 'black'] as const;
+export type PantsColour = (typeof PANTS_COLOURS)[number];
+export interface AvatarConfig {
+  style: HairStyle;
+  /** Hair colour, or the hijab's colour. */
+  hair: string;
+  skin: SkinTone;
+  shirt: string;
+  pants: PantsColour;
+}
+
 // occupied   – owner is in: silent (no post = in the office), posted IN_OFFICE, or checked in to their own desk
 // available  – owner said they're out (WFH/MC/LEAVE/OUTSTATION); free to claim
 // hot-seated – someone other than the owner has an active booking today
@@ -27,6 +44,8 @@ export interface PersonRef {
   id: string;
   name: string;
   team: string;
+  /** Chosen look (customization); null = default preset. */
+  avatar?: AvatarConfig | null;
 }
 
 export interface FloorDesk {

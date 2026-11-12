@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../api/client'
 import { ROLES, type AdminUser, type AdminUserPatch, type FloorResponse, type Role, type UserSummary } from '../api/contracts'
-import { frameStyle, variantFor } from '../theme/characters'
 import { PageHeader } from '../theme/Chrome'
 import './admin.css'
+import { personFrameStyle } from '../components/characterArt'
 
 interface Props {
   floor: FloorResponse
@@ -134,7 +134,7 @@ export function AdminPage({ floor, persona }: Props) {
                   <tr key={u.id} className={u.active ? undefined : 'admin-off'} aria-busy={busy}>
                     <th scope="row">
                       <span className="admin-person">
-                        <span className="admin-sprite" style={frameStyle(variantFor(u.id), 'down', 0)} aria-hidden="true" />
+                        <span className="admin-sprite" style={personFrameStyle(u.id, 'down', 0)} aria-hidden="true" />
                         <span>
                           {u.name}
                           {self && <span className="admin-you">you</span>}
