@@ -147,7 +147,6 @@ function pointAlong(route: Point[], s: number): { p: Point; a: Point; b: Point }
   return { p: route[0], a: route[0], b: route[0] }
 }
 
-/** Distance along the route `ms` into the walk. */
 /** Where along one leg (a → b) after `ms` of walking it. */
 const along = (a: number, b: number, ms: number, speed = WALK_SPEED) =>
   a + Math.sign(b - a) * Math.min(Math.abs(b - a), (Math.max(0, ms) / 1000) * speed)
@@ -221,7 +220,7 @@ function toHub(route: Point[], s: number): Point[] {
   }
   if (i >= lastHub) return route.slice(lastHub, i + 1).reverse() // seat side: go back towards the hub
   const firstAhead = route.findIndex((p, j) => j > i && onHub(p))
-  return route.slice(i + 1, firstAhead + 1) // door side: go forward onto the hub
+  return route.slice(i + 1, firstAhead + 1) // before the route's last hub point: carry on forward onto the hub row
 }
 
 /** From the hub row to where `next` is heading: its seat (walking in) or the door (walking out). */

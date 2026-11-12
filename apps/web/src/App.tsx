@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FloorResponse } from './api/contracts'
 import { DeskPanel } from './components/DeskPanel'
 import { Legend } from './components/Legend'
@@ -25,7 +25,7 @@ interface Suggestion {
 }
 
 export default function App() {
-  const { walkers, hiddenSeated, start: startWalks, cancelAll: cancelWalks } = useWalkers()
+  const { walkers, hiddenSeated, walkingIds, start: startWalks, cancelAll: cancelWalks } = useWalkers()
   // People who arrive walk in from the door, leavers walk out, desk-switchers walk across.
   const onFloorChange = useCallback(
     (prev: FloorResponse, next: FloorResponse) => {
@@ -41,6 +41,8 @@ export default function App() {
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null)
   const [tab, setTab] = useState<AppTab>('map')
   const [kopiMessage, setKopiMessage] = useState<string | null>(null)
+  const kopiTimer = useRef<number | undefined>(undefined)
+  useEffect(() => () => window.clearTimeout(kopiTimer.current), []) // no stray timer after unmount
   // Look the desk up in the latest floor so the panel updates live when state changes.
   const selected = floor?.desks.find((d) => d.id === selectedId) ?? null
   const narrow = useNarrow()
@@ -66,11 +68,12 @@ export default function App() {
   // for a kopi and back. One run at a time.
   function kopiRun() {
     if (!floor || !persona || kopiMessage) return
-    const run = planKopiRun(floor.desks, persona)
+    const run = planKopiRun(floor.desks, persona, walkingIds)
     startWalks(run.crew.map((c) => ({ personId: c.person.id, name: c.person.name, walk: c.walk, hideSeated: true })))
     setKopiMessage(run.message)
     const longest = Math.max(4000, ...run.crew.map((c) => walkDuration(c.walk)))
-    window.setTimeout(() => setKopiMessage(null), longest + 300)
+    window.clearTimeout(kopiTimer.current)
+    kopiTimer.current = window.setTimeout(() => setKopiMessage(null), longest + 300)
   }
 
   // Phone: the desk panel sits below the map, so bring it into view when a desk is picked.
@@ -99,6 +102,8 @@ export default function App() {
       onLogout={() => {
         setSelectedId(null)
         setTab('map')
+        window.clearTimeout(kopiTimer.current) // a kopi run belongs to the persona who started it
+        setKopiMessage(null)
         setPersona(null) // → login page
       }}
     />

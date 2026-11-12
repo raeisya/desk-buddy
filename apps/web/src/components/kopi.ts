@@ -13,7 +13,7 @@ export const KOPI_COUNTER = { x: 64, y: 648, w: 208, h: 92 }
 /** Where the steam rises: above the coffee machine at the left end of the counter. */
 export const KOPI_MACHINE: Point = { x: 102, y: 650 }
 /** Where people stand: the open floor just north of the counter, facing it. Feet points. */
-const KOPI_SPOTS: Point[] = [124, 154, 184, 214, 244, 274].map((x) => ({ x, y: 676 }))
+const KOPI_SPOTS: Point[] = [112, 142, 172, 202, 232, 262].map((x) => ({ x, y: 676 })) // over the counter (x 72–262)
 const KOPI_WAIT_MS = 2500
 /** Kopi is urgent: people hurry over (and back), so the whole run fits a live demo. */
 const KOPI_SPEED = 360
@@ -36,15 +36,22 @@ function joinNames(names: string[], total: number): string {
   return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
 }
 
-/** Your teammates who are in today (you included), nearest the pantry first, up to one per spot. */
-export function planKopiRun(desks: FloorDesk[], me: { id: string; team: string }): KopiRun {
+/**
+ * Your teammates who are in today, up to one per spot: you first (if you're in), then nearest the
+ * pantry. People already walking (arriving, leaving) sit this run out — redirecting them would lose
+ * the stop at the counter.
+ */
+export function planKopiRun(desks: FloorDesk[], me: { id: string; team: string }, busy: Set<string> = new Set()): KopiRun {
   const team = desks.flatMap((d) => {
     const p = seatedPerson(d)
     return p && p.team === me.team ? [{ person: p, desk: d }] : []
   })
   if (team.length === 0) return { crew: [], message: `Jom kopi! …but nobody from ${me.team} is in today. Kopi sendiri? ☕` }
 
-  const crew = [...team].sort((a, b) => distToCounter(a.desk) - distToCounter(b.desk)).slice(0, KOPI_SPOTS.length)
+  const crew = team
+    .filter((t) => !busy.has(t.person.id))
+    .sort((a, b) => Number(b.person.id === me.id) - Number(a.person.id === me.id) || distToCounter(a.desk) - distToCounter(b.desk))
+    .slice(0, KOPI_SPOTS.length)
   const runs = crew.map((c, i) => ({
     person: c.person,
     walk: tripTo(c.desk, KOPI_SPOTS[i], { ms: KOPI_WAIT_MS, face: 'down', bubble: '☕' }, KOPI_SPEED),

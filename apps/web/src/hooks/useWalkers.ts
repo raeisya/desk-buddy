@@ -23,7 +23,7 @@ export interface WalkerView {
   y: number
   dir: Direction
   column: number
-  /** Shown while stopped somewhere (e.g. "☕ Kopi!" at the counter). */
+  /** Shown while stopped somewhere (e.g. "☕" at the kopi counter); replaces the name tag. */
   bubble?: string
 }
 
@@ -88,6 +88,8 @@ export function useWalkers() {
     return { personId: w.personId, name: w.name, x, y, dir: pose.dir, column, bubble: pose.bubble }
   })
   const hiddenSeated = new Set(walks.filter((w) => w.hideSeated).map((w) => w.personId))
+  /** Everyone walking right now (e.g. so a kopi run can leave them out). */
+  const walkingIds = new Set(walks.map((w) => w.personId))
 
-  return { walkers: views, hiddenSeated, start, cancelAll }
+  return { walkers: views, hiddenSeated, walkingIds, start, cancelAll }
 }
